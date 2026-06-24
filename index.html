@@ -472,6 +472,9 @@ body {
 .settings-item { display:flex; align-items:center; gap:10px; width:100%; padding:13px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; color:var(--text1); font-size:14px; font-family:inherit; cursor:pointer; text-align:left; }
 .settings-item:hover { background:var(--bg3); }
 .settings-item i { font-size:18px; color:var(--text2); }
+.settings-item.danger { color:var(--danger); }
+.settings-item.danger i { color:var(--danger); }
+.settings-item.danger:hover { background:rgba(226,75,74,0.12); }
 .notif-empty { text-align:center; padding:34px 20px; color:var(--text3); }
 .notif-empty i { font-size:38px; display:block; margin-bottom:12px; }
 .notif-empty p { font-size:14px; }
@@ -860,6 +863,7 @@ body {
     <div class="settings-list">
       <button class="settings-item" onclick="closeSettings();document.getElementById('avatarInput').click()"><i class="ti ti-photo"></i> 프로필 사진 변경</button>
       <button class="settings-item" id="settingsLogout" onclick="doLogout();closeSettings()"><i class="ti ti-logout"></i> 로그아웃</button>
+      <button class="settings-item danger" id="settingsDelete" onclick="deleteAccount()"><i class="ti ti-trash"></i> 계정 삭제</button>
     </div>
     <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:16px;">Dive+ · v1.0.0</div>
   </div>
@@ -970,6 +974,7 @@ function refreshProfile(){
   const u = currentUser ? DB.getUsers().find(x=>x.id===currentUser) : null;
   const nm=document.getElementById('profileNick'); if(nm) nm.textContent = u ? (u.nick||u.id) : '게스트';
   const lo=document.getElementById('settingsLogout'); if(lo) lo.style.display = currentUser ? 'flex' : 'none';
+  const del=document.getElementById('settingsDelete'); if(del) del.style.display = currentUser ? 'flex' : 'none';
   applyAvatar(localStorage.getItem(avatarKey()));
 }
 function openSettings(){ document.getElementById('settingsModal').classList.add('show'); }
@@ -1175,6 +1180,20 @@ function showErr(el,msg){ el.textContent=msg; el.style.display='block'; }
 
 // ── LOGOUT ──
 function doLogout(){ currentUser=''; DB.clearSession(); refreshNavUI(); }
+
+// ── 계정 삭제 ──
+function deleteAccount(){
+  if(!currentUser){ closeSettings(); return; }
+  if(!confirm('정말 계정을 삭제하시겠습니까?\n\n계정 정보와 회원님이 올린 모든 게시물·사진이 영구적으로 삭제되며 복구할 수 없습니다.')) return;
+  const id = currentUser;
+  DB.saveUsers(DB.getUsers().filter(u=>u.id!==id));
+  DB.savePosts(DB.getPosts().filter(p=>p.owner!==id));
+  try{ localStorage.removeItem('of_avatar_'+id); }catch(e){}
+  if(localStorage.getItem('of_saved_id')===id) localStorage.removeItem('of_saved_id');
+  currentUser=''; DB.clearSession();
+  closeSettings(); refreshNavUI();
+  alert('계정이 삭제되었습니다.');
+}
 
 // ── SIGNUP ──
 let captchaCode='';
