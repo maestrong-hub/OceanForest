@@ -451,6 +451,8 @@ body {
 .profile-page { padding: 18px; }
 .profile-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
 .profile-nick { font-size:22px; font-weight:700; color:var(--text1); }
+.profile-nameblock { display:flex; flex-direction:column; gap:3px; }
+.profile-sub { font-size:12px; color:var(--text3); }
 .profile-header-actions { display:flex; gap:4px; }
 .profile-icon-btn { background:none; border:none; color:var(--text2); font-size:22px; cursor:pointer; padding:5px; position:relative; }
 .profile-icon-btn:hover { color:var(--text1); }
@@ -509,6 +511,26 @@ body {
 .pick-map{height:190px;border-radius:12px;overflow:hidden;border:1px solid var(--border2);background:var(--bg2);}
 .loc-hint{font-size:11px;color:var(--text3);margin-top:6px;}
 .pick-pin-inner{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:#fff;border-radius:50%;font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,0.5);border:2px solid var(--accent);}
+/* like / comment on cards */
+.act-actions{display:flex;gap:16px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.act-act{background:none;border:none;color:var(--text2);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;padding:0;}
+.act-act i{font-size:16px;}
+.act-act.liked{color:var(--accent);}
+/* post detail modal */
+.pm-image{border-radius:12px;overflow:hidden;margin-bottom:12px;}
+.pm-image img{width:100%;display:block;}
+.pm-emoji{height:180px;display:flex;align-items:center;justify-content:center;font-size:56px;}
+.pm-owner{font-size:13px;font-weight:700;color:var(--accent);cursor:pointer;}
+.pm-name{font-size:15px;color:var(--text1);margin-top:4px;}
+.pm-actions{display:flex;gap:20px;padding:12px 0;border-bottom:1px solid var(--border);margin:10px 0;}
+.pm-act{background:none;border:none;color:var(--text1);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;padding:0;}
+.pm-act i{font-size:20px;}
+.pm-act.liked{color:var(--accent);}
+.pm-comments{max-height:190px;overflow-y:auto;margin-bottom:12px;}
+.pm-c{font-size:13px;color:var(--text2);padding:6px 0;line-height:1.5;}
+.pm-c-user{color:var(--accent);font-weight:600;cursor:pointer;}
+.pm-c-empty{font-size:12px;color:var(--text3);padding:12px 0;text-align:center;}
+.pm-comment-input{display:flex;gap:8px;}
 </style>
 </head>
 <body>
@@ -652,7 +674,10 @@ body {
   <div id="page-profile" class="page">
     <div class="profile-page">
       <div class="profile-header">
-        <div class="profile-nick" id="profileNick">게스트</div>
+        <div class="profile-nameblock">
+          <div class="profile-nick" id="profileNick">게스트</div>
+          <div class="profile-sub" id="profileSub"></div>
+        </div>
         <div class="profile-header-actions">
           <button class="profile-icon-btn" onclick="openSettings()" aria-label="설정"><i class="ti ti-settings"></i></button>
           <button class="profile-icon-btn" onclick="openNotifications()" aria-label="알림"><i class="ti ti-bell"></i><span class="dot"></span></button>
@@ -946,6 +971,25 @@ body {
   </div>
 </div>
 
+<!-- ═══ POST DETAIL MODAL ═══ -->
+<div class="modal-bg" id="postModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-top"><div class="modal-title">게시물</div><button class="modal-close-btn" onclick="closePost()">×</button></div>
+    <div id="pmImage" class="pm-image"></div>
+    <div class="pm-owner" id="pmOwner"></div>
+    <div class="pm-name" id="pmName"></div>
+    <div class="pm-actions">
+      <button class="pm-act" id="pmLikeBtn" onclick="toggleLikeCurrent()"><i class="ti ti-scuba-mask"></i> <span id="pmLikeCount">0</span></button>
+      <span class="pm-act"><i class="ti ti-message-circle"></i> <span id="pmCommentCount">0</span></span>
+    </div>
+    <div class="pm-comments" id="pmComments"></div>
+    <div class="pm-comment-input">
+      <input class="m-input" id="pmCommentText" type="text" placeholder="댓글 달기..." onkeydown="if(event.key==='Enter'){event.preventDefault();addCommentCurrent();}" />
+      <button class="loc-search-btn" onclick="addCommentCurrent()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ NOTIFICATION MODAL ═══ -->
 <div class="modal-bg" id="notifModal">
   <div class="modal-box" style="max-width:360px;">
@@ -1068,6 +1112,7 @@ function setAvatar(input){
 function refreshProfile(){
   const u = currentUser ? DB.getUsers().find(x=>x.id===currentUser) : null;
   const nm=document.getElementById('profileNick'); if(nm) nm.textContent = u ? (u.nick||u.id) : '게스트';
+  const sub=document.getElementById('profileSub'); if(sub){ const parts=[]; if(u&&u.cert)parts.push(u.cert); if(u&&u.org)parts.push(u.org); sub.textContent=parts.join(' · '); }
   const sp=document.getElementById('statPosts'); if(sp) sp.textContent = currentUser ? DB.getPosts().filter(p=>p.owner===currentUser).length : 0;
   const sfo=document.getElementById('statFollowers'); if(sfo) sfo.textContent = currentUser ? followerCount(currentUser) : 0;
   const sfg=document.getElementById('statFollowing'); if(sfg) sfg.textContent = currentUser ? followingCount(currentUser) : 0;
@@ -1108,6 +1153,47 @@ function renderUserProfile(uid){
 }
 function toggleFollowViewed(){ toggleFollow(currentViewedUser); }
 document.getElementById('userProfileModal').addEventListener('click',function(e){if(e.target===this)closeUserProfile();});
+
+// ── 좋아요 / 댓글 ──
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+let currentPostId='';
+function openPost(id){ currentPostId=id; renderPostModal(); document.getElementById('postModal').classList.add('show'); }
+function closePost(){ document.getElementById('postModal').classList.remove('show'); }
+function renderPostModal(){
+  const p=DB.getPosts().find(x=>x.id===currentPostId); if(!p) return;
+  const ownerU=DB.getUsers().find(u=>u.id===p.owner); const ownerNick=ownerU?(ownerU.nick||ownerU.id):p.owner;
+  document.getElementById('pmImage').innerHTML = p.img?('<img src="'+p.img+'" alt="">'):('<div class="pm-emoji '+(bgClass[p.type]||'ocean-bg')+'">'+(p.emoji||'🌊')+'</div>');
+  const own=document.getElementById('pmOwner'); own.textContent='@'+ownerNick; own.onclick=function(){ closePost(); openUserProfile(p.owner); };
+  document.getElementById('pmName').textContent=p.title;
+  const likes=p.likes||[], comments=p.comments||[];
+  document.getElementById('pmLikeCount').textContent=likes.length;
+  document.getElementById('pmCommentCount').textContent=comments.length;
+  document.getElementById('pmLikeBtn').classList.toggle('liked', !!currentUser && likes.indexOf(currentUser)>=0);
+  document.getElementById('pmComments').innerHTML = comments.length
+    ? comments.map(function(c){ const cu=DB.getUsers().find(u=>u.id===c.user); const cn=cu?(cu.nick||cu.id):c.user; return '<div class="pm-c"><span class="pm-c-user" onclick="closePost();openUserProfile(\''+c.user+'\')">@'+cn+'</span> '+escapeHtml(c.text)+'</div>'; }).join('')
+    : '<div class="pm-c-empty">첫 댓글을 남겨보세요.</div>';
+}
+function toggleLike(id){
+  if(!currentUser){ openAuth('login'); return; }
+  const posts=DB.getPosts(); const p=posts.find(x=>x.id===id); if(!p) return;
+  if(!p.likes) p.likes=[];
+  const i=p.likes.indexOf(currentUser);
+  if(i>=0) p.likes.splice(i,1); else p.likes.push(currentUser);
+  DB.savePosts(posts); renderPosts();
+  if(document.getElementById('postModal').classList.contains('show')) renderPostModal();
+}
+function toggleLikeCurrent(){ toggleLike(currentPostId); }
+function addComment(id,text){
+  if(!currentUser){ openAuth('login'); return; }
+  text=(text||'').trim(); if(!text) return;
+  const posts=DB.getPosts(); const p=posts.find(x=>x.id===id); if(!p) return;
+  if(!p.comments) p.comments=[];
+  const now=new Date(); const date=now.getFullYear()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+String(now.getDate()).padStart(2,'0');
+  p.comments.push({user:currentUser, text:text, date:date});
+  DB.savePosts(posts); renderPosts(); renderPostModal();
+}
+function addCommentCurrent(){ const el=document.getElementById('pmCommentText'); addComment(currentPostId, el.value); el.value=''; }
+document.getElementById('postModal').addEventListener('click',function(e){if(e.target===this)closePost();});
 function openNotifications(){ document.getElementById('notifModal').classList.add('show'); }
 function closeNotifications(){ document.getElementById('notifModal').classList.remove('show'); }
 
@@ -1224,9 +1310,11 @@ function renderPosts(){
     const ownerU = DB.getUsers().find(u=>u.id===p.owner);
     const ownerNick = ownerU ? (ownerU.nick||ownerU.id) : (p.owner||'');
     const regionHtml = p.region ? `<div class="act-region"><i class="ti ti-map-pin" style="font-size:11px;"></i> ${p.region}</div>` : '';
+    const liked = (p.likes && currentUser && p.likes.indexOf(currentUser)>=0) ? 'liked' : '';
+    const likeCount = (p.likes||[]).length, commentCount = (p.comments||[]).length;
     grid.insertAdjacentHTML('beforeend',`
       <div class="act-card">
-        <div class="act-img ${bgClass[p.type]||'ocean-bg'}">
+        <div class="act-img ${bgClass[p.type]||'ocean-bg'}" onclick="openPost('${p.id}')" style="cursor:pointer;">
           ${imgHtml}
           ${del}
         </div>
@@ -1235,6 +1323,10 @@ function renderPosts(){
           <div class="act-name">${p.title}</div>
           ${regionHtml}
           <div class="act-foot"><span class="act-date">${p.date}</span><span class="site-badge ${badge}">${label}</span></div>
+          <div class="act-actions">
+            <button class="act-act ${liked}" onclick="toggleLike('${p.id}')"><i class="ti ti-scuba-mask"></i> ${likeCount}</button>
+            <button class="act-act" onclick="openPost('${p.id}')"><i class="ti ti-message-circle"></i> ${commentCount}</button>
+          </div>
         </div>
       </div>`);
   });
