@@ -1606,6 +1606,7 @@ let selectedLang = localStorage.getItem('of_lang') || '';
 function selectLang(code, label) {
   // 1. update nav button label
   localStorage.setItem('of_lang', code);
+  localStorage.setItem('of_lang_chosen', '1');
   selectedLang = code;
   // flash selected item
   const splash = document.getElementById('langSplash');
@@ -1645,10 +1646,10 @@ document.addEventListener('click', function(e) {
   if (sns && !sns.contains(e.target)) sns.classList.remove('open');
 });
 
-// Skip splash if language already chosen this session
+// Skip splash if language already chosen before (영구 저장 — 최초 1회만 표시)
 (function initSplash() {
   const splash = document.getElementById('langSplash');
-  if (sessionStorage.getItem('of_lang_chosen')) {
+  if (localStorage.getItem('of_lang_chosen')) {
     splash.style.display = 'none';
     return;
   }
@@ -1660,9 +1661,9 @@ document.addEventListener('click', function(e) {
   }, 12000);
 })();
 
-// After language is picked, mark session so splash won't re-appear on reload
+// After language is picked, mark permanently so splash won't re-appear
 document.getElementById('langSplash').addEventListener('transitionend', function() {
-  sessionStorage.setItem('of_lang_chosen', '1');
+  localStorage.setItem('of_lang_chosen', '1');
 });
 
 // ═══════════════════════════════
