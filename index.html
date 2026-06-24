@@ -23,6 +23,9 @@
   --kelp-bg:rgba(99,153,34,0.15); --kelp-text:#C0DD97;
   --cleanup-bg:rgba(186,117,23,0.15); --cleanup-text:#FAC775;
   --coral-bg:rgba(216,90,48,0.15); --coral-text:#F0997B;
+  --monitor-bg:rgba(55,138,221,0.15); --monitor-text:#9BC4EA;
+  --reef-bg:rgba(142,124,195,0.18); --reef-text:#C9BEE8;
+  --etc-bg:rgba(139,148,158,0.18); --etc-text:#C2CAD3;
   --danger:#E24B4A; --success:#1D9E75;
 }
 body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; background:#060a0f; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
@@ -70,6 +73,7 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 .tip-org { color:var(--text2); font-size:11px; display:block; margin-bottom:5px; }
 .tip-tag { display:inline-block; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:600; }
 .tip-tag.kelp{background:var(--kelp-bg);color:var(--kelp-text);} .tip-tag.cleanup{background:var(--cleanup-bg);color:var(--cleanup-text);} .tip-tag.coral{background:var(--coral-bg);color:var(--coral-text);}
+.tip-tag.monitor{background:var(--monitor-bg);color:var(--monitor-text);} .tip-tag.reef{background:var(--reef-bg);color:var(--reef-text);} .tip-tag.etc{background:var(--etc-bg);color:var(--etc-text);}
 .map-legend { position:absolute; bottom:14px; left:14px; background:rgba(13,17,23,0.88); border-radius:10px; padding:10px 14px; color:var(--text1); font-size:11px; border:1px solid var(--border); }
 .legend-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
 .legend-row:last-child{margin-bottom:0;} .legend-dot{width:9px;height:9px;border-radius:50%;}
@@ -82,6 +86,7 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 .site-meta{font-size:11px;color:var(--text2);}
 .site-badge{display:inline-block;border-radius:4px;padding:2px 7px;font-size:10px;margin-top:5px;font-weight:600;}
 .badge-kelp{background:var(--kelp-bg);color:var(--kelp-text);} .badge-cleanup{background:var(--cleanup-bg);color:var(--cleanup-text);} .badge-coral{background:var(--coral-bg);color:var(--coral-text);}
+.badge-monitor{background:var(--monitor-bg);color:var(--monitor-text);} .badge-reef{background:var(--reef-bg);color:var(--reef-text);} .badge-etc{background:var(--etc-bg);color:var(--etc-text);}
 
 /* PROMO */
 .promo-page{padding:24px;}
@@ -128,6 +133,9 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 .act-img.kelp-bg{background:linear-gradient(135deg,#17300a,#3B6D11);}
 .act-img.cleanup-bg{background:linear-gradient(135deg,#2d1800,#714a0a);}
 .act-img.coral-bg{background:linear-gradient(135deg,#2d0d00,#993C1D);}
+.act-img.monitor-bg{background:linear-gradient(135deg,#071a30,#1A5C9E);}
+.act-img.reef-bg{background:linear-gradient(135deg,#1a1430,#4B3B7A);}
+.act-img.etc-bg{background:linear-gradient(135deg,#1a1d22,#3D4650);}
 .media-tag{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;border-radius:4px;font-size:10px;padding:2px 7px;z-index:2;}
 .delete-btn{position:absolute;top:8px;left:8px;background:rgba(226,75,74,0.9);color:#fff;border:none;border-radius:5px;font-size:11px;padding:3px 8px;cursor:pointer;z-index:3;display:none;align-items:center;gap:3px;}
 .act-card:hover .delete-btn.visible{display:flex;}
@@ -250,7 +258,8 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 .m-submit.green{background:var(--success);}
 .m-switch{text-align:center;margin-top:12px;font-size:12px;color:var(--text3);}
 .m-switch a{color:var(--accent);cursor:pointer;text-decoration:underline;}
-.remember-row{display:flex;align-items:center;gap:7px;margin:2px 0 12px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;}
+.remember-row{display:flex;align-items:center;gap:20px;margin:2px 0 12px;font-size:12px;color:var(--text2);user-select:none;}
+.remember-item{display:flex;align-items:center;gap:7px;cursor:pointer;}
 .remember-row input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;margin:0;}
 .auth-find-links{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px;font-size:12px;}
 .auth-find-links a{color:var(--text3);cursor:pointer;text-decoration:none;}
@@ -265,6 +274,7 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 /* success / recovery screen */
 .alt-screen{display:none;} .alt-screen.show{display:block;}
 .success-icon{font-size:48px;text-align:center;margin-bottom:12px;}
+.signup-ok-icon{width:120px;height:120px;border-radius:26px;display:block;margin:0 auto 16px;object-fit:cover;box-shadow:0 12px 40px rgba(12,68,124,0.45);}
 .success-title{font-size:17px;font-weight:700;color:var(--text1);text-align:center;margin-bottom:8px;}
 .success-desc{font-size:13px;color:var(--text2);line-height:1.65;text-align:center;margin-bottom:18px;}
 .pw-result-box{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin:14px 0;text-align:center;}
@@ -275,7 +285,7 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 .upload-modal-box{background:var(--bg1);border-radius:18px;padding:26px 24px;width:100%;max-width:480px;border:1px solid var(--border2);box-shadow:0 24px 60px rgba(0,0,0,0.6);margin:auto;}
 .drop-zone{border:2px dashed var(--border2);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;margin-bottom:14px;}
 .drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(55,138,221,0.06);}
-.drop-zone i{font-size:36px;color:var(--text3);display:block;margin-bottom:10px;}
+.drop-zone i{font-size:52px;color:var(--text2);display:block;margin-bottom:0;}
 .drop-zone p{font-size:13px;color:var(--text2);}
 .drop-zone small{font-size:11px;color:var(--text3);}
 .drop-zone input[type=file]{display:none;}
@@ -520,7 +530,6 @@ body {
       </div>
       <div id="navUser" style="display:none;display:flex;gap:8px;align-items:center;">
         <span class="user-chip"><i class="ti ti-circle-check"></i> <span id="navUsername"></span></span>
-        <button class="nav-btn" onclick="doLogout()"><i class="ti ti-logout"></i> 로그아웃</button>
       </div>
     </div>
   </nav>
@@ -584,6 +593,9 @@ body {
         <button class="chip" onclick="filt(this,'kelp')">해조류 복원</button>
         <button class="chip" onclick="filt(this,'cleanup')">쓰레기 수거</button>
         <button class="chip" onclick="filt(this,'coral')">산호 복원</button>
+        <button class="chip" onclick="filt(this,'monitor')">수중환경 모니터링</button>
+        <button class="chip" onclick="filt(this,'reef')">어초 설치</button>
+        <button class="chip" onclick="filt(this,'etc')">기타</button>
       </div>
       <div class="act-grid" id="actGrid"></div>
     </div>
@@ -635,10 +647,9 @@ body {
         </label>
         <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)" style="display:none;" />
         <div class="profile-stats">
-          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">posts</div></div>
+          <div class="pstat"><div class="pstat-num" id="statPosts">0</div><div class="pstat-lbl">posts</div></div>
           <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">followers</div></div>
           <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">following</div></div>
-          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">bubbles</div></div>
         </div>
       </div>
       <div class="profile-btns">
@@ -659,7 +670,7 @@ body {
     <button class="bnav-btn" onclick="go('ba',this)" aria-label="Before After"><i class="ti ti-arrows-left-right"></i></button>
     <button class="bnav-btn" onclick="go('research',this)" aria-label="논문 기사"><i class="ti ti-book-2"></i></button>
     <button class="bnav-btn" onclick="go('promo',this)" aria-label="탄소 흡수"><i class="ti ti-leaf"></i></button>
-    <button class="bnav-btn" onclick="go('profile',this)" aria-label="마이"><i class="ti ti-scuba-mask"></i><span class="bnav-label">Me</span></button>
+    <button class="bnav-btn" onclick="go('profile',this)" aria-label="마이"><i class="ti ti-scuba-mask"></i></button>
   </nav>
 </div>
 
@@ -681,7 +692,10 @@ body {
     <div id="panelLogin">
       <div class="m-field"><label class="m-label">아이디 <span class="req">*</span></label><input class="m-input" id="lId" type="text" placeholder="아이디 입력" /></div>
       <div class="m-field"><label class="m-label">비밀번호 <span class="req">*</span></label><input class="m-input" id="lPw" type="password" placeholder="비밀번호 입력" /></div>
-      <label class="remember-row"><input type="checkbox" id="rememberId" /><span>아이디 저장</span></label>
+      <div class="remember-row">
+        <label class="remember-item"><input type="checkbox" id="rememberId" /><span>아이디 저장</span></label>
+        <label class="remember-item"><input type="checkbox" id="autoLogin" /><span>자동 로그인</span></label>
+      </div>
       <div class="field-hint e" id="loginErr" style="margin-bottom:8px;display:none;"></div>
       <button class="m-submit" onclick="doLogin()">로그인</button>
       <div class="auth-find-links">
@@ -761,7 +775,7 @@ body {
       </div>
       <!-- Signup success -->
       <div id="signupOk" class="alt-screen">
-        <div class="success-icon">🌊</div>
+        <img id="signupOkIcon" class="signup-ok-icon" alt="앱 아이콘" />
         <div class="success-title">가입이 완료되었습니다!</div>
         <div class="success-desc">바로 로그인하여 활동 사진을 업로드하실 수 있습니다.</div>
         <button class="m-submit" onclick="showPanel('login')">로그인하러 가기</button>
@@ -831,9 +845,7 @@ body {
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="handleDrop(event)">
-      <i class="ti ti-photo-plus"></i>
-      <p>클릭하거나 사진을 끌어다 놓으세요</p>
-      <small>JPG, PNG, GIF 지원 · 최대 5MB</small>
+      <i class="ti ti-plus"></i>
       <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)" />
     </div>
     <div class="preview-row" id="previewRow"></div>
@@ -845,8 +857,11 @@ body {
       <label class="m-label">활동 분류 <span class="req">*</span></label>
       <select class="m-select" id="upType">
         <option value="kelp">🌿 해조류 복원</option>
-        <option value="cleanup">🗑️ 쓰레기 수거</option>
+        <option value="cleanup">♻️ 쓰레기 수거</option>
         <option value="coral">🪸 산호 복원</option>
+        <option value="monitor">🤿 수중환경 모니터링</option>
+        <option value="reef">🪨 어초 설치</option>
+        <option value="etc">📌 기타</option>
       </select>
     </div>
     <div class="m-field">
@@ -862,7 +877,7 @@ body {
   <div class="modal-box" style="max-width:360px;">
     <div class="modal-top"><div class="modal-title">설정</div><button class="modal-close-btn" onclick="closeSettings()">×</button></div>
     <div class="settings-list">
-      <button class="settings-item" onclick="closeSettings();document.getElementById('avatarInput').click()"><i class="ti ti-photo"></i> 프로필 사진 변경</button>
+      <button class="settings-item" onclick="closeSettings();openLangSettings()"><i class="ti ti-language"></i> 언어 설정</button>
       <button class="settings-item" id="settingsLogout" onclick="doLogout();closeSettings()"><i class="ti ti-logout"></i> 로그아웃</button>
       <button class="settings-item danger" id="settingsDelete" onclick="deleteAccount()"><i class="ti ti-trash"></i> 계정 삭제</button>
     </div>
@@ -887,9 +902,9 @@ const DB = {
   saveUsers(u){ localStorage.setItem('of_users', JSON.stringify(u)) },
   getPosts(){ try{return JSON.parse(localStorage.getItem('of_posts')||'[]')}catch{return[]} },
   savePosts(p){ localStorage.setItem('of_posts', JSON.stringify(p)) },
-  getSession(){ return localStorage.getItem('of_session')||'' },
-  setSession(id){ localStorage.setItem('of_session',id) },
-  clearSession(){ localStorage.removeItem('of_session') }
+  getSession(){ return localStorage.getItem('of_session') || sessionStorage.getItem('of_session') || '' },
+  setSession(id, persist){ if(persist){ localStorage.setItem('of_session',id); sessionStorage.removeItem('of_session'); } else { sessionStorage.setItem('of_session',id); localStorage.removeItem('of_session'); } },
+  clearSession(){ localStorage.removeItem('of_session'); sessionStorage.removeItem('of_session') }
 };
 
 // seed demo posts
@@ -898,7 +913,7 @@ const DB = {
   DB.savePosts([
     {id:'p1', owner:'ocean_admin', title:'제주 감태 복원 2차 모종 이식 완료', org:'한국 해양환경공단', type:'kelp', date:'2025.11.03', img:null, emoji:'🌿'},
     {id:'p2', owner:'ocean_admin', title:'수중 드론 모니터링 영상 공개', org:'Ocean Forest Norway', type:'kelp', date:'2025.10.22', img:null, emoji:'🎬'},
-    {id:'p3', owner:'ocean_admin', title:'인도양 플라스틱 12톤 수거', org:'Ocean Cleanup Africa', type:'cleanup', date:'2025.10.10', img:null, emoji:'🗑️'},
+    {id:'p3', owner:'ocean_admin', title:'인도양 플라스틱 12톤 수거', org:'Ocean Cleanup Africa', type:'cleanup', date:'2025.10.10', img:null, emoji:'♻️'},
     {id:'p4', owner:'ocean_admin', title:'3D 프린팅 인공 암초 600개 설치', org:'Coral Restoration Aus', type:'coral', date:'2025.09.30', img:null, emoji:'🪸'},
     {id:'p5', owner:'ocean_admin', title:'포시도니아 해초 1,200주 이식', org:'WWF Mediterranean', type:'kelp', date:'2025.09.15', img:null, emoji:'🌱'},
     {id:'p6', owner:'ocean_admin', title:'북해 쓰레기 수거 선박 운항', org:'North Sea Foundation', type:'cleanup', date:'2025.08.28', img:null, emoji:'🚢'},
@@ -974,12 +989,14 @@ function setAvatar(input){
 function refreshProfile(){
   const u = currentUser ? DB.getUsers().find(x=>x.id===currentUser) : null;
   const nm=document.getElementById('profileNick'); if(nm) nm.textContent = u ? (u.nick||u.id) : '게스트';
+  const sp=document.getElementById('statPosts'); if(sp) sp.textContent = currentUser ? DB.getPosts().filter(p=>p.owner===currentUser).length : 0;
   const lo=document.getElementById('settingsLogout'); if(lo) lo.style.display = currentUser ? 'flex' : 'none';
   const del=document.getElementById('settingsDelete'); if(del) del.style.display = currentUser ? 'flex' : 'none';
   applyAvatar(localStorage.getItem(avatarKey()));
 }
 function openSettings(){ document.getElementById('settingsModal').classList.add('show'); }
 function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+function openLangSettings(){ const sp=document.getElementById('langSplash'); if(!sp) return; sp.style.display='flex'; sp.style.visibility='visible'; sp.style.opacity='1'; sp.classList.remove('hidden'); }
 function openNotifications(){ document.getElementById('notifModal').classList.add('show'); }
 function closeNotifications(){ document.getElementById('notifModal').classList.remove('show'); }
 
@@ -997,9 +1014,10 @@ const SITES = [
   {name:'북해 해양 청소',       org:'North Sea Foundation',          type:'cleanup', lat:56.0,  lng:3.0},
   {name:'동아프리카 맹그로브',   org:'African Wildlife Foundation',   type:'kelp',    lat:-6.8,  lng:39.3},
 ];
-const TYPE_COLOR = {kelp:'#639922', cleanup:'#BA7517', coral:'#D85A30'};
-const TYPE_LABEL = {kelp:'해조류 복원', cleanup:'쓰레기 수거', coral:'산호 복원'};
-const BADGE = {kelp:['badge-kelp','해조류'], cleanup:['badge-cleanup','청소'], coral:['badge-coral','산호']};
+const TYPE_COLOR = {kelp:'#639922', cleanup:'#BA7517', coral:'#D85A30', monitor:'#378ADD', reef:'#8E7CC3', etc:'#8b949e'};
+const TYPE_LABEL = {kelp:'해조류 복원', cleanup:'쓰레기 수거', coral:'산호 복원', monitor:'수중환경 모니터링', reef:'어초 설치', etc:'기타'};
+const TYPE_EMOJI = {kelp:'🌿', cleanup:'♻️', coral:'🪸', monitor:'🤿', reef:'🪨', etc:'📌'};
+const BADGE = {kelp:['badge-kelp','해조류'], cleanup:['badge-cleanup','청소'], coral:['badge-coral','산호'], monitor:['badge-monitor','모니터링'], reef:['badge-reef','어초'], etc:['badge-etc','기타']};
 let oceanMap = null;
 const siteMarkers = {};
 
@@ -1051,7 +1069,7 @@ window.addEventListener('load', function(){ renderSiteList(); initMap(); refresh
 //  MAP
 // ═══════════════════════════════
 function tip(e,site,org,type){
-  const labels={kelp:'해조류 복원',cleanup:'쓰레기 수거',coral:'산호 복원'};
+  const labels=TYPE_LABEL;
   document.getElementById('tSite').textContent=site;
   document.getElementById('tOrg').textContent=org;
   const tag=document.getElementById('tTag');
@@ -1072,7 +1090,7 @@ function filt(el, type){
   el.classList.add('active'); currentFilter=type; renderPosts();
 }
 
-const bgClass = {kelp:'kelp-bg', cleanup:'cleanup-bg', coral:'coral-bg'};
+const bgClass = {kelp:'kelp-bg', cleanup:'cleanup-bg', coral:'coral-bg', monitor:'monitor-bg', reef:'reef-bg', etc:'etc-bg'};
 
 function renderPosts(){
   const grid = document.getElementById('actGrid');
@@ -1090,8 +1108,8 @@ function renderPosts(){
     const del = canDelete
       ? `<button class="delete-btn visible" onclick="deletePost('${p.id}',event)" title="삭제"><i class="ti ti-trash" style="font-size:12px;"></i> 삭제</button>`
       : '';
-    const badge = {kelp:'badge-kelp',cleanup:'badge-cleanup',coral:'badge-coral'}[p.type]||'badge-kelp';
-    const label = {kelp:'해조류',cleanup:'청소',coral:'산호'}[p.type]||'';
+    const badge = (BADGE[p.type]||['badge-kelp',''])[0];
+    const label = (BADGE[p.type]||['','' ])[1];
     grid.insertAdjacentHTML('beforeend',`
       <div class="act-card">
         <div class="act-img ${bgClass[p.type]||'ocean-bg'}">
@@ -1145,6 +1163,7 @@ function showPanel(name){
     const saved=localStorage.getItem('of_saved_id');
     const lid=document.getElementById('lId'), rc=document.getElementById('rememberId');
     if(saved){ lid.value=saved; rc.checked=true; } else { rc.checked=false; }
+    const al=document.getElementById('autoLogin'); if(al) al.checked = localStorage.getItem('of_auto')!=='0';
   }
   if(name==='signup'){ document.getElementById('signupForm').style.display='block'; document.getElementById('signupOk').classList.remove('show'); newCaptcha(); }
   if(name==='recovery'){ document.getElementById('recoveryForm').style.display='block'; document.getElementById('recoveryOk').classList.remove('show'); document.getElementById('hREmail').style.display='none'; document.getElementById('rEmail').value=''; }
@@ -1162,7 +1181,9 @@ function doLogin(){
   if(!user){ showErr(errEl,'아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
   if(document.getElementById('rememberId').checked){ localStorage.setItem('of_saved_id', id); }
   else { localStorage.removeItem('of_saved_id'); }
-  currentUser=id; DB.setSession(id);
+  const auto=document.getElementById('autoLogin').checked;
+  localStorage.setItem('of_auto', auto?'1':'0');
+  currentUser=id; DB.setSession(id, auto);
   closeAuth(); refreshNavUI();
 }
 
@@ -1242,6 +1263,8 @@ function doSignup(){
   });
   DB.saveUsers(users);
   document.getElementById('signupForm').style.display='none';
+  const okIcon=document.getElementById('signupOkIcon'), splashImg=document.querySelector('.splash-logo-box');
+  if(okIcon && splashImg) okIcon.src=splashImg.src;
   document.getElementById('signupOk').classList.add('show');
 }
 
@@ -1300,15 +1323,15 @@ function doUpload(){
   const org=document.getElementById('upOrg').value.trim();
   const now=new Date();
   const date=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
-  const emojis={kelp:'🌿',cleanup:'🗑️',coral:'🪸'};
   const posts=DB.getPosts();
   const img=pendingFiles.length?pendingFiles[0]:null;
-  posts.push({id:'p'+Date.now(),owner:currentUser,title,org:org||currentUser,type,date,img,emoji:emojis[type]||'🌊'});
+  posts.push({id:'p'+Date.now(),owner:currentUser,title,org:org||currentUser,type,date,img,emoji:TYPE_EMOJI[type]||'🌊'});
   DB.savePosts(posts);
   closeUpload();
   document.getElementById('upTitle').value='';
   document.getElementById('upOrg').value='';
   renderPosts();
+  refreshProfile();
   // switch to activities tab
   document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
