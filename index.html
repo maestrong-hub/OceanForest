@@ -11,6 +11,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="바다숲 복원">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -33,7 +36,7 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 
 /* TOP NAV */
 .topnav { background:var(--bg1); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:54px; flex-shrink:0; }
-.brand { display:flex; align-items:center; gap:10px; color:var(--text1); font-size:16px; font-weight:600; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text1); font-family:'Comfortaa',cursive,sans-serif; font-size:19px; font-weight:700; letter-spacing:1.5px; background:linear-gradient(90deg,#4FC3F7,#1D9E75); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
 .logo-box { width:32px; height:32px; background:linear-gradient(135deg,#0C447C,#1D9E75); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
 .nav-right { display:flex; gap:8px; align-items:center; }
 .nav-btn { background:var(--bg3); color:var(--text2); border:1px solid var(--border); border-radius:7px; padding:5px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit; transition:all 0.15s; }
@@ -564,14 +567,12 @@ body {
 
   <!-- TOP NAV -->
   <nav class="topnav">
-    <div class="brand"><div class="logo-box">🌊</div> 바다숲 복원</div>
+    <div class="brand">OCEAN FOREST</div>
     <div class="nav-right">
       <div id="navGuest">
         <button class="nav-btn" onclick="openAuth('login')"><i class="ti ti-login"></i> 로그인</button>
       </div>
-      <div id="navUser" style="display:none;display:flex;gap:8px;align-items:center;">
-        <span class="user-chip"><i class="ti ti-circle-check"></i> <span id="navUsername"></span></span>
-      </div>
+      <div id="navUser" style="display:none;"></div>
     </div>
   </nav>
 
@@ -1061,7 +1062,8 @@ function refreshNavUI(){
   nu.style.display = loggedIn ? 'flex' : 'none';
   if(loggedIn){
     const u = DB.getUsers().find(x=>x.id===currentUser);
-    document.getElementById('navUsername').textContent = (u && u.nick) ? u.nick : currentUser;
+    const nuName = document.getElementById('navUsername');
+    if(nuName) nuName.textContent = (u && u.nick) ? u.nick : currentUser;
   }
   renderPosts();
   if(typeof refreshProfile === 'function') refreshProfile();
