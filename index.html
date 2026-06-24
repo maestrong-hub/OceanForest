@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바다숲 복원</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="theme-color" content="#1848C0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="바다숲 복원">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg0:#0d1117; --bg1:#161b22; --bg2:#1c2330; --bg3:#242d3a;
+  --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.15);
+  --text1:#e6edf3; --text2:#8b949e; --text3:#484f58;
+  --accent:#378ADD; --kelp:#639922;
+  --kelp-bg:rgba(99,153,34,0.15); --kelp-text:#C0DD97;
+  --cleanup-bg:rgba(186,117,23,0.15); --cleanup-text:#FAC775;
+  --coral-bg:rgba(216,90,48,0.15); --coral-text:#F0997B;
+  --danger:#E24B4A; --success:#1D9E75;
+}
+body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; background:#060a0f; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+.app-frame { width:100%; max-width:960px; background:var(--bg0); border-radius:20px; overflow:hidden; border:1px solid var(--border); box-shadow:0 40px 100px rgba(0,0,0,0.7); min-height:720px; display:flex; flex-direction:column; }
+
+/* TOP NAV */
+.topnav { background:var(--bg1); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:54px; flex-shrink:0; }
+.brand { display:flex; align-items:center; gap:10px; color:var(--text1); font-size:16px; font-weight:600; }
+.logo-box { width:32px; height:32px; background:linear-gradient(135deg,#0C447C,#1D9E75); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.nav-right { display:flex; gap:8px; align-items:center; }
+.nav-btn { background:var(--bg3); color:var(--text2); border:1px solid var(--border); border-radius:7px; padding:5px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:5px; font-family:inherit; transition:all 0.15s; }
+.nav-btn:hover { background:var(--bg2); color:var(--text1); }
+.user-chip { display:flex; align-items:center; gap:7px; background:var(--kelp-bg); border:1px solid rgba(99,153,34,0.3); border-radius:20px; padding:5px 12px; color:var(--kelp-text); font-size:12px; font-weight:600; }
+.user-chip i { font-size:14px; }
+
+/* PAGES */
+.page { display:none; flex:1; overflow-y:auto; background:var(--bg0); }
+.page.active { display:flex; flex-direction:column; }
+
+/* BOTTOM NAV */
+.bottomnav { background:var(--bg1); border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-around; height:60px; flex-shrink:0; padding:0 8px; }
+.bnav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; cursor:pointer; color:var(--text3); transition:color 0.15s; background:none; border:none; position:relative; }
+.bnav-btn i { font-size:24px; }
+.bnav-btn.active { color:var(--accent); }
+.bnav-btn.active::after { content:''; position:absolute; bottom:6px; width:4px; height:4px; border-radius:50%; background:var(--accent); }
+.bnav-btn:hover { color:var(--text1); }
+
+/* MAP */
+.map-layout { display:flex; flex:1; min-height:560px; }
+.map-area { flex:1; position:relative; overflow:hidden; background:linear-gradient(150deg,#040e1a 0%,#071a30 25%,#0c2d50 55%,#0d4035 100%); }
+.map-grid { position:absolute; inset:0; background-image:linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px); background-size:38px 38px; }
+.continent { position:absolute; background:rgba(255,255,255,0.055); }
+.map-pin { position:absolute; cursor:pointer; transform:translate(-50%,-50%); transition:transform 0.2s; }
+.map-pin:hover { transform:translate(-50%,-50%) scale(1.35); }
+.pin-dot { width:13px; height:13px; border-radius:50%; border:2px solid rgba(255,255,255,0.85); }
+.pin-dot.kelp { background:#639922; animation:pk 2.5s infinite; }
+.pin-dot.cleanup { background:#BA7517; animation:pc 2.5s 0.8s infinite; }
+.pin-dot.coral { background:#D85A30; animation:pr 2.5s 1.5s infinite; }
+@keyframes pk{0%,100%{box-shadow:0 0 0 3px rgba(99,153,34,.45)}50%{box-shadow:0 0 0 8px rgba(99,153,34,.1)}}
+@keyframes pc{0%,100%{box-shadow:0 0 0 3px rgba(186,117,23,.45)}50%{box-shadow:0 0 0 8px rgba(186,117,23,.1)}}
+@keyframes pr{0%,100%{box-shadow:0 0 0 3px rgba(216,90,48,.45)}50%{box-shadow:0 0 0 8px rgba(216,90,48,.1)}}
+.map-tooltip { position:absolute; display:none; background:rgba(13,17,23,0.96); color:var(--text1); border-radius:10px; padding:10px 14px; font-size:12px; min-width:165px; pointer-events:none; border:1px solid var(--border2); z-index:10; }
+.map-tooltip.show { display:block; }
+.map-tooltip strong { font-size:13px; display:block; margin-bottom:3px; }
+.tip-org { color:var(--text2); font-size:11px; display:block; margin-bottom:5px; }
+.tip-tag { display:inline-block; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:600; }
+.tip-tag.kelp{background:var(--kelp-bg);color:var(--kelp-text);} .tip-tag.cleanup{background:var(--cleanup-bg);color:var(--cleanup-text);} .tip-tag.coral{background:var(--coral-bg);color:var(--coral-text);}
+.map-legend { position:absolute; bottom:14px; left:14px; background:rgba(13,17,23,0.88); border-radius:10px; padding:10px 14px; color:var(--text1); font-size:11px; border:1px solid var(--border); }
+.legend-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+.legend-row:last-child{margin-bottom:0;} .legend-dot{width:9px;height:9px;border-radius:50%;}
+.map-sidebar { width:225px; flex-shrink:0; border-left:1px solid var(--border); display:flex; flex-direction:column; background:var(--bg1); }
+.sidebar-head { padding:12px 16px; border-bottom:1px solid var(--border); font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:1.2px; display:flex; align-items:center; gap:6px; }
+.site-list{overflow-y:auto;flex:1;}
+.site-item{padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;}
+.site-item:hover{background:var(--bg2);}
+.site-name{font-size:13px;font-weight:500;color:var(--text1);margin-bottom:3px;}
+.site-meta{font-size:11px;color:var(--text2);}
+.site-badge{display:inline-block;border-radius:4px;padding:2px 7px;font-size:10px;margin-top:5px;font-weight:600;}
+.badge-kelp{background:var(--kelp-bg);color:var(--kelp-text);} .badge-cleanup{background:var(--cleanup-bg);color:var(--cleanup-text);} .badge-coral{background:var(--coral-bg);color:var(--coral-text);}
+
+/* PROMO */
+.promo-page{padding:24px;}
+.promo-hero{background:linear-gradient(135deg,#071a30 0%,#0a3060 50%,#0d4035 100%);border:1px solid var(--border2);border-radius:16px;padding:30px 26px;color:#fff;margin-bottom:18px;position:relative;overflow:hidden;}
+.promo-hero::before{content:'';position:absolute;width:260px;height:260px;border-radius:50%;background:rgba(55,138,221,0.12);top:-70px;right:-50px;}
+.promo-hero::after{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(29,158,117,0.1);bottom:-30px;left:38%;}
+.eyebrow{font-size:10px;color:#5DCAA5;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:10px;}
+.hero-title{font-size:21px;font-weight:700;line-height:1.38;margin-bottom:22px;position:relative;z-index:1;}
+.stat-row{display:flex;gap:20px;flex-wrap:wrap;position:relative;z-index:1;}
+.stat-num{font-size:28px;font-weight:700;color:#5DCAA5;} .stat-lbl{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.compare-section{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
+.section-title{font-size:13px;font-weight:600;color:var(--text1);margin-bottom:16px;}
+.bar-row{margin-bottom:12px;} .bar-row:last-child{margin-bottom:0;}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px;}
+.bar-vo{color:var(--accent);font-weight:600;} .bar-vl{color:var(--kelp);font-weight:600;}
+.bar-bg{background:var(--bg3);border-radius:4px;height:9px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;} .fill-ocean{background:var(--accent);} .fill-land{background:var(--kelp);}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.info-card{border-radius:12px;padding:16px;border:1px solid var(--border);}
+.info-card.ocean{background:rgba(55,138,221,0.08);} .info-card.kelp2{background:rgba(99,153,34,0.1);}
+.info-card-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.info-card.ocean .info-card-label{color:var(--accent);} .info-card.kelp2 .info-card-label{color:var(--kelp);}
+.info-card-text{font-size:12px;line-height:1.65;color:var(--text2);}
+
+/* ACTIVITIES */
+.act-page{padding:18px;}
+.act-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.act-title-text{font-size:16px;font-weight:600;color:var(--text1);}
+.upload-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;transition:opacity 0.15s;}
+.upload-btn:hover{opacity:0.85;}
+.upload-btn:disabled{background:var(--bg3);color:var(--text3);cursor:not-allowed;opacity:1;}
+.filter-row{display:flex;gap:7px;margin-bottom:16px;flex-wrap:wrap;}
+.chip{padding:5px 13px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all 0.15s;font-family:inherit;}
+.chip.active{background:rgba(55,138,221,0.15);color:var(--accent);border-color:var(--accent);font-weight:600;}
+
+/* Photo grid */
+.act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:13px;}
+.act-card{background:var(--bg1);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.2s;position:relative;}
+.act-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.act-img{height:118px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;overflow:hidden;}
+.act-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.act-img .emoji-placeholder{position:relative;z-index:1;}
+.act-img.ocean-bg{background:linear-gradient(135deg,#071a30,#185FA5);}
+.act-img.kelp-bg{background:linear-gradient(135deg,#17300a,#3B6D11);}
+.act-img.cleanup-bg{background:linear-gradient(135deg,#2d1800,#714a0a);}
+.act-img.coral-bg{background:linear-gradient(135deg,#2d0d00,#993C1D);}
+.media-tag{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;border-radius:4px;font-size:10px;padding:2px 7px;z-index:2;}
+.delete-btn{position:absolute;top:8px;left:8px;background:rgba(226,75,74,0.9);color:#fff;border:none;border-radius:5px;font-size:11px;padding:3px 8px;cursor:pointer;z-index:3;display:none;align-items:center;gap:3px;}
+.act-card:hover .delete-btn.visible{display:flex;}
+.act-body{padding:12px;}
+.act-org{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:4px;}
+.act-name{font-size:13px;font-weight:500;color:var(--text1);margin-bottom:8px;line-height:1.4;}
+.act-foot{display:flex;align-items:center;justify-content:space-between;}
+.act-date{font-size:11px;color:var(--text3);}
+.login-prompt{text-align:center;padding:40px 20px;color:var(--text3);}
+.login-prompt i{font-size:36px;margin-bottom:12px;display:block;}
+.login-prompt p{font-size:14px;margin-bottom:14px;}
+.login-prompt button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;cursor:pointer;font-family:inherit;}
+
+/* BEFORE/AFTER */
+.ba-page{padding:20px;}
+.ba-title{font-size:16px;font-weight:600;color:var(--text1);margin-bottom:14px;}
+.ba-select-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.ba-select-row select{border:1px solid var(--border2);border-radius:7px;padding:7px 12px;font-size:13px;background:var(--bg2);color:var(--text1);font-family:inherit;cursor:pointer;}
+.ba-btn{padding:7px 16px;border:1px solid var(--border2);border-radius:7px;background:var(--bg2);font-size:13px;cursor:pointer;font-family:inherit;color:var(--text1);transition:background 0.15s;}
+.ba-btn:hover{background:var(--bg3);}
+.ba-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.ba-card{background:var(--bg1);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.ba-card-head{padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;}
+.head-before{background:var(--bg2);color:var(--text2);} .head-after{background:rgba(99,153,34,0.15);color:var(--kelp-text);}
+.ba-img{height:155px;display:flex;align-items:center;justify-content:center;font-size:52px;}
+.img-before{background:linear-gradient(135deg,#1a1a1a,#2e2e2e);} .img-after{background:linear-gradient(135deg,#0d2206,#27500A);}
+.ba-stats{padding:13px;display:flex;flex-direction:column;gap:10px;}
+.ba-stat-row{display:flex;justify-content:space-between;align-items:center;}
+.ba-key{font-size:12px;color:var(--text2);} .ba-val{font-size:13px;font-weight:600;color:var(--text1);}
+.chg{font-size:11px;padding:2px 7px;border-radius:4px;margin-left:6px;font-weight:600;}
+.chg-up{background:var(--kelp-bg);color:var(--kelp-text);} .chg-dn{background:var(--coral-bg);color:var(--coral-text);}
+.timeline-box{background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.tl-title{font-size:12px;font-weight:600;color:var(--text1);margin-bottom:10px;}
+.tl-item{font-size:12px;color:var(--text2);margin-bottom:7px;display:flex;align-items:flex-start;gap:8px;line-height:1.5;}
+.tl-item:last-child{margin-bottom:0;} .tl-dot{width:8px;height:8px;border-radius:50%;background:var(--kelp);flex-shrink:0;margin-top:4px;}
+
+/* RESEARCH */
+.research-page{padding:18px;}
+.search-box{position:relative;margin-bottom:16px;}
+.search-box input{width:100%;padding:10px 14px 10px 40px;border:1px solid var(--border2);border-radius:10px;font-size:14px;background:var(--bg1);color:var(--text1);font-family:inherit;}
+.search-box input::placeholder{color:var(--text3);}
+.search-box input:focus{outline:none;border-color:var(--accent);}
+.search-box i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:17px;}
+.article{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;cursor:pointer;transition:border-color 0.15s;}
+.article:hover{border-color:var(--border2);}
+.art-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.art-type{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.type-paper{background:rgba(55,138,221,0.15);color:#85B7EB;} .type-news{background:rgba(186,117,23,0.15);color:#FAC775;} .type-report{background:rgba(99,153,34,0.15);color:#C0DD97;}
+.art-source{font-size:11px;color:var(--text3);}
+.art-title{font-size:14px;font-weight:600;color:var(--text1);margin-bottom:6px;line-height:1.4;}
+.art-desc{font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:10px;}
+.lang-pills{display:flex;gap:5px;flex-wrap:wrap;}
+.lang-pill{font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--border2);cursor:pointer;color:var(--text2);transition:all 0.12s;font-family:inherit;background:transparent;}
+.lang-pill:hover{background:rgba(55,138,221,0.15);color:var(--accent);border-color:var(--accent);}
+.lang-pill.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* TECH */
+.tech-page{padding:18px;}
+.tech-card{background:var(--bg1);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:13px;}
+.tech-head{padding:16px 18px 0;display:flex;align-items:flex-start;gap:14px;}
+.tech-icon-box{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;}
+.icon-ocean{background:rgba(55,138,221,0.15);} .icon-kelp{background:rgba(99,153,34,0.15);} .icon-clean{background:rgba(186,117,23,0.15);}
+.tech-card-title{font-size:15px;font-weight:600;color:var(--text1);margin-bottom:3px;}
+.tech-card-sub{font-size:12px;color:var(--text3);}
+.tech-body{padding:12px 18px 16px;}
+.tech-desc{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:12px;}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap;}
+.t-tag{font-size:11px;padding:3px 10px;border-radius:12px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px;}
+.modal-bg.show{display:flex;}
+.modal-box{background:var(--bg1);border-radius:18px;padding:26px 24px;width:100%;max-width:420px;border:1px solid var(--border2);box-shadow:0 24px 60px rgba(0,0,0,0.6);margin:auto;}
+.modal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.modal-title{font-size:18px;font-weight:700;color:var(--text1);}
+.modal-close-btn{background:none;border:none;font-size:22px;color:var(--text3);cursor:pointer;line-height:1;}
+.modal-tabs{display:flex;background:var(--bg2);border-radius:10px;padding:3px;gap:3px;margin-bottom:20px;}
+.modal-tab{flex:1;text-align:center;padding:8px;font-size:13px;font-weight:600;border-radius:7px;cursor:pointer;color:var(--text3);transition:all 0.2s;border:none;background:none;font-family:inherit;}
+.modal-tab.active{background:var(--bg1);color:var(--text1);}
+
+/* form */
+.m-field{margin-bottom:13px;}
+.m-label{font-size:12px;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.req{color:var(--danger);font-size:13px;line-height:1;}
+.optional-note{font-size:10px;color:var(--text3);margin-left:auto;}
+.m-input{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:9px;font-size:14px;font-family:inherit;background:var(--bg2);color:var(--text1);transition:border-color 0.15s;}
+.m-input::placeholder{color:var(--text3);}
+.m-input:focus{outline:none;border-color:var(--accent);}
+.m-input.err{border-color:var(--danger);}
+.m-input.ok{border-color:var(--success);}
+.field-hint{font-size:11px;margin-top:4px;display:none;}
+.field-hint.show{display:block;}
+.field-hint.e{color:var(--danger);} .field-hint.s{color:var(--success);}
+.sns-group{display:flex;flex-direction:column;gap:8px;}
+.sns-row{display:flex;align-items:center;gap:8px;}
+.sns-prefix{background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:10px 12px;font-size:12px;color:var(--text3);white-space:nowrap;flex-shrink:0;}
+.sns-select{position:relative;flex-shrink:0;}
+.sns-prefix-btn{display:flex;align-items:center;gap:4px;cursor:pointer;font-family:inherit;color:var(--text2);}
+.sns-prefix-btn:hover{border-color:var(--accent);color:var(--text1);}
+.sns-prefix-btn #snsIcon{font-size:15px;}
+.sns-prefix-btn .sns-caret{font-size:13px;color:var(--text3);}
+.sns-dropdown{display:none;position:absolute;left:0;top:100%;margin-top:5px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;z-index:10;min-width:158px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,0.55);}
+.sns-select.open .sns-dropdown{display:block;}
+.sns-option{padding:10px 13px;font-size:13px;color:var(--text1);cursor:pointer;display:flex;align-items:center;gap:9px;white-space:nowrap;border-top:1px solid var(--border);}
+.sns-option:first-child{border-top:none;}
+.sns-option:hover{background:rgba(55,138,221,0.15);color:var(--accent);}
+.sns-option i{font-size:16px;}
+.sns-divider{display:flex;align-items:center;gap:10px;}
+.sns-divider::before,.sns-divider::after{content:'';flex:1;height:1px;background:var(--border2);}
+.sns-divider span{font-size:11px;color:var(--text3);}
+.captcha-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:13px;}
+.captcha-lbl{font-size:10px;color:var(--text3);margin-bottom:9px;letter-spacing:0.5px;text-transform:uppercase;}
+.captcha-display{background:var(--bg3);border-radius:8px;padding:12px 16px;margin-bottom:9px;display:flex;align-items:center;justify-content:space-between;}
+.captcha-chars{font-family:'Courier New',monospace;font-size:22px;font-weight:700;letter-spacing:8px;color:var(--text1);user-select:none;text-shadow:1px 1px 0 rgba(55,138,221,0.35),-1px -1px 0 rgba(29,158,117,0.25);}
+.captcha-refresh{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;transition:color 0.15s;}
+.captcha-refresh:hover{color:var(--accent);}
+.m-submit{width:100%;padding:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;transition:opacity 0.15s;}
+.m-submit:hover{opacity:0.88;}
+.m-submit.green{background:var(--success);}
+.m-switch{text-align:center;margin-top:12px;font-size:12px;color:var(--text3);}
+.m-switch a{color:var(--accent);cursor:pointer;text-decoration:underline;}
+.remember-row{display:flex;align-items:center;gap:7px;margin:2px 0 12px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none;}
+.remember-row input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;margin:0;}
+.auth-find-links{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:14px;font-size:12px;}
+.auth-find-links a{color:var(--text3);cursor:pointer;text-decoration:none;}
+.auth-find-links a:hover{color:var(--accent);text-decoration:underline;}
+.auth-find-sep{color:var(--border2);}
+.info-note{background:rgba(55,138,221,0.08);border:1px solid rgba(55,138,221,0.2);border-radius:9px;padding:10px 12px;margin-top:12px;font-size:11px;color:#85B7EB;line-height:1.6;display:flex;gap:8px;}
+.info-note i{flex-shrink:0;margin-top:1px;}
+.divider-line{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.divider-line::before,.divider-line::after{content:'';flex:1;height:1px;background:var(--border);}
+.divider-line span{font-size:11px;color:var(--text3);}
+
+/* success / recovery screen */
+.alt-screen{display:none;} .alt-screen.show{display:block;}
+.success-icon{font-size:48px;text-align:center;margin-bottom:12px;}
+.success-title{font-size:17px;font-weight:700;color:var(--text1);text-align:center;margin-bottom:8px;}
+.success-desc{font-size:13px;color:var(--text2);line-height:1.65;text-align:center;margin-bottom:18px;}
+.pw-result-box{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;margin:14px 0;text-align:center;}
+.pw-result-label{font-size:11px;color:var(--text3);margin-bottom:6px;}
+.pw-result-val{font-family:'Courier New',monospace;font-size:18px;font-weight:700;color:var(--kelp-text);letter-spacing:2px;}
+
+/* upload modal */
+.upload-modal-box{background:var(--bg1);border-radius:18px;padding:26px 24px;width:100%;max-width:480px;border:1px solid var(--border2);box-shadow:0 24px 60px rgba(0,0,0,0.6);margin:auto;}
+.drop-zone{border:2px dashed var(--border2);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;margin-bottom:14px;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(55,138,221,0.06);}
+.drop-zone i{font-size:36px;color:var(--text3);display:block;margin-bottom:10px;}
+.drop-zone p{font-size:13px;color:var(--text2);}
+.drop-zone small{font-size:11px;color:var(--text3);}
+.drop-zone input[type=file]{display:none;}
+.preview-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.preview-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;}
+.preview-item img{width:100%;height:100%;object-fit:cover;}
+.preview-item button{position:absolute;top:3px;right:3px;background:rgba(226,75,74,0.9);color:#fff;border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+.m-select{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:9px;font-size:14px;font-family:inherit;background:var(--bg2);color:var(--text1);}
+.m-select:focus{outline:none;border-color:var(--accent);}
+
+/* ═══════════════════════════════
+   LANGUAGE SPLASH SCREEN
+═══════════════════════════════ */
+#langSplash {
+  position: fixed; inset: 0; z-index: 999;
+  background: #060a0f;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+  /* fade-out handled by JS class */
+  transition: opacity 0.7s ease, visibility 0.7s ease;
+}
+#langSplash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+/* logo area — slides up from below */
+.splash-logo {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  margin-bottom: 56px;
+  opacity: 0; transform: translateY(28px);
+  animation: splashUp 0.75s cubic-bezier(0.22,1,0.36,1) 0.15s forwards;
+}
+.splash-logo-box {
+  width: 84px; height: 84px;
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px;
+  object-fit: cover;
+  box-shadow: 0 12px 40px rgba(12,68,124,0.45);
+}
+.splash-name {
+  font-size: 24px; font-weight: 700; color: #e6edf3;
+  letter-spacing: 0.5px;
+}
+.splash-tagline {
+  font-size: 12px; color: #484f58; letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* prompt — fades in slightly after logo */
+.splash-prompt {
+  font-size: 13px; color: #8b949e; margin-bottom: 22px;
+  letter-spacing: 0.5px;
+  opacity: 0; animation: splashFade 0.5s ease 0.65s forwards;
+}
+
+/* language dropdown (검색바 형태) */
+.lang-select {
+  position: relative;
+  width: 300px;
+  opacity: 0; animation: splashFade 0.5s ease 0.8s forwards;
+}
+.lang-select-bar {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  color: #e6edf3; font-size: 15px; font-weight: 600;
+  transition: border-color 0.18s, background 0.18s;
+}
+.lang-select-bar:hover { border-color: rgba(55,138,221,0.5); }
+.lang-select.open .lang-select-bar {
+  border-color: #378ADD;
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+}
+.lang-select-arrow { font-size: 18px; color: #8b949e; transition: transform 0.2s; }
+.lang-select.open .lang-select-arrow { transform: rotate(180deg); }
+
+.lang-dropdown {
+  display: none;
+  position: absolute; left: 0; right: 0; top: 100%;
+  background: #161b22;
+  border: 1px solid #378ADD; border-top: none;
+  border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+  max-height: 264px; overflow-y: auto;
+  z-index: 5;
+}
+.lang-select.open .lang-dropdown { display: block; }
+.lang-option {
+  padding: 12px 16px;
+  font-size: 14px; color: #e6edf3;
+  cursor: pointer;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.12s;
+}
+.lang-option:first-child { border-top: none; }
+.lang-option:hover { background: rgba(55,138,221,0.15); color: #378ADD; }
+
+/* wave decoration — subtle animated bar at bottom */
+.splash-wave {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, #0C447C, #1D9E75, #378ADD, #0C447C);
+  background-size: 200% 100%;
+  animation: waveSlide 3s linear infinite;
+  opacity: 0; animation: waveSlide 3s linear infinite, splashFade 0.5s ease 1s forwards;
+}
+
+@keyframes splashUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes splashFade {
+  to { opacity: 1; }
+}
+@keyframes waveSlide {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* ═══════════════════════════════
+   모바일 앱: 화면에 꽉 채우고 하단 네비게이션 고정
+═══════════════════════════════ */
+html, body { height: 100%; }
+body {
+  padding: 0;
+  display: block;
+  overflow: hidden;          /* 페이지 전체 스크롤 방지 → 내용만 스크롤 */
+}
+.app-frame {
+  max-width: 100%;
+  min-height: 0;
+  height: 100vh;
+  height: 100dvh;            /* 모바일 주소창 영역까지 정확히 반영 */
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+/* 상단·하단 바는 절대 줄어들지 않게, 가운데 page만 스크롤 */
+.topnav, .bottomnav { flex-shrink: 0; }
+.page { min-height: 0; }
+
+/* ═══════════════════════════════
+   지도 탭: 한국 중심 실제 지도 + 하단 현장 목록
+═══════════════════════════════ */
+.map-page { display: flex; flex-direction: column; flex: 1; }
+.map-wrap { position: relative; flex-shrink: 0; }
+#leafletMap {
+  width: 100%;
+  height: 56vh; min-height: 280px;
+  background: #a3cce6;
+}
+#leafletMap .leaflet-popup-content { font-size: 12px; line-height: 1.5; }
+.map-wrap .map-legend { z-index: 500; }
+.map-sitelist { background: var(--bg1); border-top: 1px solid var(--border); }
+.map-sitelist .site-list { flex: none; overflow: visible; }
+
+/* ═══════════════════════════════
+   마이(프로필) 탭 — Dive+ 스타일
+═══════════════════════════════ */
+.profile-page { padding: 18px; }
+.profile-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.profile-nick { font-size:22px; font-weight:700; color:var(--text1); }
+.profile-header-actions { display:flex; gap:4px; }
+.profile-icon-btn { background:none; border:none; color:var(--text2); font-size:22px; cursor:pointer; padding:5px; position:relative; }
+.profile-icon-btn:hover { color:var(--text1); }
+.profile-icon-btn .dot { position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%; background:var(--danger); }
+.profile-top { display:flex; align-items:center; gap:18px; margin-bottom:18px; }
+.profile-avatar { position:relative; width:84px; height:84px; border-radius:50%; background:var(--bg3); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; overflow:hidden; }
+.profile-avatar img { width:100%; height:100%; object-fit:cover; }
+.profile-avatar > i#avatarPlaceholder { font-size:40px; color:var(--text3); }
+.avatar-cam { position:absolute; bottom:0; right:0; width:26px; height:26px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; border:2px solid var(--bg0); }
+.profile-stats { display:flex; flex:1; justify-content:space-around; }
+.pstat { text-align:center; }
+.pstat-num { font-size:19px; font-weight:700; color:var(--text1); }
+.pstat-lbl { font-size:11px; color:var(--text3); margin-top:2px; }
+.profile-btns { display:flex; gap:10px; margin-bottom:24px; }
+.pf-btn { flex:1; padding:9px; border-radius:20px; border:1px solid var(--border2); background:transparent; color:var(--text2); font-size:13px; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center; gap:5px; }
+.pf-btn:hover { border-color:var(--accent); color:var(--text1); }
+.pf-btn.vip { border-color:rgba(250,199,117,0.5); color:#FAC775; }
+.profile-section-title { font-size:13px; font-weight:600; color:var(--text2); margin-bottom:12px; }
+.profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.pgrid-card { height:118px; border-radius:16px; display:flex; align-items:flex-end; padding:16px; color:#fff; font-size:15px; font-weight:600; cursor:pointer; transition:transform 0.15s; }
+.pgrid-card:hover { transform:translateY(-2px); }
+.g-videos { background:linear-gradient(135deg,#f3a7ab,#b49ce0); }
+.g-photos { background:linear-gradient(135deg,#85e9c4,#4cb6a6); }
+.g-logs   { background:linear-gradient(135deg,#8270ff,#6a5bff); }
+.g-buddy  { background:linear-gradient(135deg,#7fd0ef,#4aa9e0); }
+.g-qna    { background:linear-gradient(135deg,#4f8ad8,#3a66ad); }
+.bnav-label { font-size:9px; margin-top:1px; }
+
+/* 설정/알림 모달 보조 */
+.settings-list { display:flex; flex-direction:column; gap:4px; }
+.settings-item { display:flex; align-items:center; gap:10px; width:100%; padding:13px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; color:var(--text1); font-size:14px; font-family:inherit; cursor:pointer; text-align:left; }
+.settings-item:hover { background:var(--bg3); }
+.settings-item i { font-size:18px; color:var(--text2); }
+.notif-empty { text-align:center; padding:34px 20px; color:var(--text3); }
+.notif-empty i { font-size:38px; display:block; margin-bottom:12px; }
+.notif-empty p { font-size:14px; }
+</style>
+</head>
+<body>
+<!-- ═══ LANGUAGE SPLASH ═══ -->
+<div id="langSplash">
+  <div class="splash-logo">
+    <img class="splash-logo-box" src="data:image/png;base64,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/Zv7B/7/5frNhZg4PxsTX80a64NdQgBAExs73BMvn6zEyWPl6C8VtvW7524vxtcX52Pi/KynfdiFBAC0iIEnCzE+Vorx0VKMj5Wi90Dnll6/dnclvrtSi2+najE5VYtqzZM+7GYCAFrUgWJ7DA0U46mDf4/09ezviK7OPVH4a+yvq6MtIiKWV9fHApeW10cE7/62GjPz9Zi+WY/pufXxwV8XtuZMAaA1CAAASOjxTyEBAFqWAACAhAQAACQkAAAgIQEAAAkJAABISAAAQEICAAASEgAAkJAAAICEBAAAJCQAACAhAQAACQkAAEhIAABAQgIAABISAACQkAAAgIQEAAAkJAAAICEBAAAJCQAASEgAAEBCAgAAEhIAAJCQAACAhAQAACQkAAAgIQEAAAkJAABISAAAQEICAAASEgAAkJAAAICEBAAAJCQAACAhAQAACQkAAEhIAABAQgIAABISAACQkAAAgIQEAAAkJAAAICEBAAAJCQAASEgAAEBCAgAAEhIAAJCQAACAhAQAACQkAAAgIQEAAAkJAABISAAAQEICAAASEgAAkJAAAICEBAAAJCQAACChPwEQYeZRhlvfBwAAAABJRU5ErkJggg==" alt="바다숲 복원" />
+    <div class="splash-name">바다숲 복원</div>
+    <div class="splash-tagline">Global Ocean Restoration Platform</div>
+  </div>
+  <div class="splash-prompt">언어를 선택해 주세요</div>
+  <div class="lang-select" id="langSelect">
+    <button type="button" class="lang-select-bar" onclick="toggleLangDropdown(event)">
+      <span id="langSelectCurrent">한국어</span>
+      <i class="ti ti-chevron-down lang-select-arrow"></i>
+    </button>
+    <div class="lang-dropdown">
+      <div class="lang-option" onclick="selectLang('ko','한국어')">한국어</div>
+      <div class="lang-option" onclick="selectLang('en','English')">English</div>
+      <div class="lang-option" onclick="selectLang('ja','日本語')">日本語</div>
+      <div class="lang-option" onclick="selectLang('zh','中文')">中文</div>
+      <div class="lang-option" onclick="selectLang('es','Español')">Español</div>
+      <div class="lang-option" onclick="selectLang('fr','Français')">Français</div>
+      <div class="lang-option" onclick="selectLang('de','Deutsch')">Deutsch</div>
+      <div class="lang-option" onclick="selectLang('pt','Português')">Português</div>
+      <div class="lang-option" onclick="selectLang('ar','العربية')">العربية</div>
+    </div>
+  </div>
+  <div class="splash-wave"></div>
+</div>
+
+<div class="app-frame">
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <div class="brand"><div class="logo-box">🌊</div> 바다숲 복원</div>
+    <div class="nav-right">
+      <div id="navGuest">
+        <button class="nav-btn" onclick="openAuth('login')"><i class="ti ti-login"></i> 로그인</button>
+      </div>
+      <div id="navUser" style="display:none;display:flex;gap:8px;align-items:center;">
+        <span class="user-chip"><i class="ti ti-circle-check"></i> <span id="navUsername"></span></span>
+        <button class="nav-btn" onclick="doLogout()"><i class="ti ti-logout"></i> 로그아웃</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAP -->
+  <div id="page-map" class="page active">
+    <div class="map-page">
+      <div class="map-wrap">
+        <div id="leafletMap"></div>
+        <div class="map-legend">
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:7px;letter-spacing:1px;text-transform:uppercase;">범례</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#639922;"></div><span style="color:#8b949e;">해조류 복원</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#BA7517;"></div><span style="color:#8b949e;">쓰레기 수거</span></div>
+          <div class="legend-row"><div class="legend-dot" style="background:#D85A30;"></div><span style="color:#8b949e;">산호 복원</span></div>
+        </div>
+      </div>
+      <div class="map-sitelist">
+        <div class="sidebar-head"><i class="ti ti-list"></i> 활동 현장</div>
+        <div class="site-list" id="siteList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMO -->
+  <div id="page-promo" class="page">
+    <div class="promo-page">
+      <div class="promo-hero">
+        <div class="eyebrow">왜 바다 숲인가</div>
+        <div class="hero-title">바다 숲은 육지 숲보다<br>최대 20배 빠르게 탄소를 흡수합니다</div>
+        <div class="stat-row">
+          <div><div class="stat-num">20×</div><div class="stat-lbl">탄소 흡수 속도</div></div>
+          <div><div class="stat-num">83억 t</div><div class="stat-lbl">연간 블루카본 저장량</div></div>
+          <div><div class="stat-num">71%</div><div class="stat-lbl">지구 표면이 바다</div></div>
+        </div>
+      </div>
+      <div class="compare-section">
+        <div class="section-title">단위 면적당 탄소 흡수량 비교</div>
+        <div class="bar-row"><div class="bar-label"><span>🌊 해초·해조류 (블루카본)</span><span class="bar-vo">100%</span></div><div class="bar-bg"><div class="bar-fill fill-ocean" style="width:100%;"></div></div></div>
+        <div class="bar-row"><div class="bar-label"><span>🌿 맹그로브</span><span class="bar-vl">62%</span></div><div class="bar-bg"><div class="bar-fill fill-land" style="width:62%;"></div></div></div>
+        <div class="bar-row"><div class="bar-label"><span>🌴 열대우림</span><span class="bar-vl">47%</span></div><div class="bar-bg"><div class="bar-fill fill-land" style="width:47%;"></div></div></div>
+        <div class="bar-row"><div class="bar-label"><span>🌲 온대림</span><span class="bar-vl">28%</span></div><div class="bar-bg"><div class="bar-fill fill-land" style="width:28%;"></div></div></div>
+      </div>
+      <div class="info-grid">
+        <div class="info-card ocean"><div class="info-card-label">블루카본</div><div class="info-card-text">바다 식물이 탄소를 해저 퇴적물에 수백 년간 안정적으로 저장합니다.</div></div>
+        <div class="info-card kelp2"><div class="info-card-label">생물다양성</div><div class="info-card-text">켈프 숲 1ha는 수천 종의 해양 생물에게 서식지와 먹이를 제공합니다.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITIES -->
+  <div id="page-activities" class="page">
+    <div class="act-page">
+      <div class="act-top">
+        <div class="act-title-text">활동 현황</div>
+        <button class="upload-btn" id="uploadBtn" onclick="handleUploadClick()">
+          <i class="ti ti-upload"></i> 사진 업로드
+        </button>
+      </div>
+      <div class="filter-row">
+        <button class="chip active" onclick="filt(this,'all')">전체</button>
+        <button class="chip" onclick="filt(this,'kelp')">해조류 복원</button>
+        <button class="chip" onclick="filt(this,'cleanup')">쓰레기 수거</button>
+        <button class="chip" onclick="filt(this,'coral')">산호 복원</button>
+      </div>
+      <div class="act-grid" id="actGrid"></div>
+    </div>
+  </div>
+
+  <!-- BEFORE/AFTER -->
+  <div id="page-ba" class="page">
+    <div class="ba-page">
+      <div class="ba-title">6개월 전·후 생태 비교</div>
+      <div class="ba-select-row">
+        <select><option>📍 제주도 감태 군락</option><option>📍 노르웨이 다시마 숲</option><option>📍 캘리포니아 켈프</option></select>
+        <select><option>2025년 상반기 (1~6월)</option><option>2025년 하반기 (7~12월)</option><option>2024년 하반기</option></select>
+        <button class="ba-btn">조회</button>
+      </div>
+      <div class="ba-cards">
+        <div class="ba-card"><div class="ba-card-head head-before">📅 2025년 1월 — Before</div><div class="ba-img img-before">🏜️</div><div class="ba-stats"><div class="ba-stat-row"><span class="ba-key">감태 피복률</span><span class="ba-val">12%</span></div><div class="ba-stat-row"><span class="ba-key">어종 관찰 수</span><span class="ba-val">8종</span></div><div class="ba-stat-row"><span class="ba-key">수질 투명도</span><span class="ba-val">4m</span></div><div class="ba-stat-row"><span class="ba-key">수온</span><span class="ba-val">18.2°C</span></div></div></div>
+        <div class="ba-card"><div class="ba-card-head head-after">📅 2025년 7월 — After</div><div class="ba-img img-after">🌿</div><div class="ba-stats"><div class="ba-stat-row"><span class="ba-key">감태 피복률</span><div style="display:flex;align-items:center;"><span class="ba-val">58%</span><span class="chg chg-up">+46%p</span></div></div><div class="ba-stat-row"><span class="ba-key">어종 관찰 수</span><div style="display:flex;align-items:center;"><span class="ba-val">31종</span><span class="chg chg-up">+23종</span></div></div><div class="ba-stat-row"><span class="ba-key">수질 투명도</span><div style="display:flex;align-items:center;"><span class="ba-val">9m</span><span class="chg chg-up">+5m</span></div></div><div class="ba-stat-row"><span class="ba-key">수온</span><div style="display:flex;align-items:center;"><span class="ba-val">19.1°C</span><span class="chg chg-dn">+0.9°C</span></div></div></div></div>
+      </div>
+      <div class="timeline-box"><div class="tl-title">복원 타임라인</div><div class="tl-item"><div class="tl-dot"></div>2025.01 — 감태 모종 이식 1차 (500그루), 환경 기초 측정</div><div class="tl-item"><div class="tl-dot"></div>2025.03 — 수중 드론 모니터링 1차, 성장률 분석</div><div class="tl-item"><div class="tl-dot"></div>2025.05 — 감태 모종 이식 2차 (800그루), 수질 개선 확인</div><div class="tl-item"><div class="tl-dot"></div>2025.07 — 6개월 종합 성과 조사 완료, 생물다양성 대폭 증가</div></div>
+    </div>
+  </div>
+
+  <!-- RESEARCH -->
+  <div id="page-research" class="page">
+    <div class="research-page">
+      <div class="search-box"><i class="ti ti-search"></i><input type="text" placeholder="논문, 기사, 키워드 검색..." /></div>
+      <div class="article"><div class="art-top"><span class="art-type type-paper">논문</span><span class="art-source">Nature Climate Change · 2024</span></div><div class="art-title">블루카본 생태계의 탄소 격리 잠재력: 전 지구적 평가</div><div class="art-desc">해초류와 염습지가 연간 수억 톤의 탄소를 해저 퇴적물에 저장하며, 이는 기존 추정치의 2배에 달한다는 연구 결과.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">日本語</button><button class="lang-pill">中文</button><button class="lang-pill">Español</button></div></div>
+      <div class="article"><div class="art-top"><span class="art-type type-news">기사</span><span class="art-source">BBC Science · 2025.09</span></div><div class="art-title">노르웨이, 세계 최대 규모 해조류 복원 프로젝트 착수</div><div class="art-desc">노르웨이 정부와 민간이 협력해 피오르드 200km²에 다시마 숲을 조성하는 역사적 프로젝트가 시작됐다.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">Deutsch</button><button class="lang-pill">Français</button></div></div>
+      <div class="article"><div class="art-top"><span class="art-type type-report">보고서</span><span class="art-source">UNEP · 2025</span></div><div class="art-title">기후 위기 대응 전략으로서의 해양 생태계 복원</div><div class="art-desc">2030년까지 해양 생태계 30%를 복원하면 기후 목표 달성에 결정적 역할을 할 수 있다는 UNEP의 최신 보고서.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">Português</button><button class="lang-pill">العربية</button></div></div>
+      <div class="article"><div class="art-top"><span class="art-type type-paper">논문</span><span class="art-source">Science · 2023</span></div><div class="art-title">해양 온도 상승이 켈프 숲 분포에 미치는 영향</div><div class="art-desc">해수 온도가 2°C 오를 때마다 켈프 서식 가능 구역이 극지 방향으로 70km씩 이동한다는 전 지구적 분석 연구.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">中文</button><button class="lang-pill">Italiano</button></div></div>
+    </div>
+  </div>
+
+  <!-- PROFILE (마이) -->
+  <div id="page-profile" class="page">
+    <div class="profile-page">
+      <div class="profile-header">
+        <div class="profile-nick" id="profileNick">게스트</div>
+        <div class="profile-header-actions">
+          <button class="profile-icon-btn" onclick="openSettings()" aria-label="설정"><i class="ti ti-settings"></i></button>
+          <button class="profile-icon-btn" onclick="openNotifications()" aria-label="알림"><i class="ti ti-bell"></i><span class="dot"></span></button>
+        </div>
+      </div>
+      <div class="profile-top">
+        <label class="profile-avatar" for="avatarInput">
+          <img id="avatarImg" alt="프로필 사진" style="display:none;" />
+          <i class="ti ti-scuba-mask" id="avatarPlaceholder"></i>
+          <span class="avatar-cam"><i class="ti ti-camera"></i></span>
+        </label>
+        <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)" style="display:none;" />
+        <div class="profile-stats">
+          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">posts</div></div>
+          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">followers</div></div>
+          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">following</div></div>
+          <div class="pstat"><div class="pstat-num">0</div><div class="pstat-lbl">bubbles</div></div>
+        </div>
+      </div>
+      <div class="profile-btns">
+        <button class="pf-btn" onclick="document.getElementById('avatarInput').click()"><i class="ti ti-camera"></i> 프로필 사진 변경</button>
+      </div>
+      <div class="profile-section-title">활동</div>
+      <div class="profile-grid">
+        <div class="pgrid-card g-videos">동영상</div>
+        <div class="pgrid-card g-photos">사진</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottomnav">
+    <button class="bnav-btn active" onclick="go('map',this)" aria-label="바다 숲 지도"><i class="ti ti-map-pin"></i></button>
+    <button class="bnav-btn" onclick="go('activities',this)" aria-label="활동 현황"><i class="ti ti-camera"></i></button>
+    <button class="bnav-btn" onclick="go('ba',this)" aria-label="Before After"><i class="ti ti-arrows-left-right"></i></button>
+    <button class="bnav-btn" onclick="go('research',this)" aria-label="논문 기사"><i class="ti ti-book-2"></i></button>
+    <button class="bnav-btn" onclick="go('promo',this)" aria-label="탄소 흡수"><i class="ti ti-leaf"></i></button>
+    <button class="bnav-btn" onclick="go('profile',this)" aria-label="마이"><i class="ti ti-scuba-mask"></i><span class="bnav-label">Me</span></button>
+  </nav>
+</div>
+
+<!-- ═══ AUTH MODAL ═══ -->
+<div class="modal-bg" id="authModal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-title" id="authTitle">로그인</div>
+      <button class="modal-close-btn" onclick="closeAuth()">×</button>
+    </div>
+
+    <!-- Login/Signup/Recovery tabs -->
+    <div class="modal-tabs" id="authTabs">
+      <button class="modal-tab active" onclick="showPanel('login')">로그인</button>
+      <button class="modal-tab" onclick="showPanel('signup')">회원가입</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="panelLogin">
+      <div class="m-field"><label class="m-label">아이디 <span class="req">*</span></label><input class="m-input" id="lId" type="text" placeholder="아이디 입력" /></div>
+      <div class="m-field"><label class="m-label">비밀번호 <span class="req">*</span></label><input class="m-input" id="lPw" type="password" placeholder="비밀번호 입력" /></div>
+      <label class="remember-row"><input type="checkbox" id="rememberId" /><span>아이디 저장</span></label>
+      <div class="field-hint e" id="loginErr" style="margin-bottom:8px;display:none;"></div>
+      <button class="m-submit" onclick="doLogin()">로그인</button>
+      <div class="auth-find-links">
+        <a onclick="showPanel('findId')">아이디 찾기</a>
+        <span class="auth-find-sep">|</span>
+        <a onclick="showPanel('recovery')">비밀번호 찾기</a>
+      </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="panelSignup" style="display:none;">
+      <div id="signupForm">
+        <div class="m-field">
+          <label class="m-label">아이디 <span class="req">*</span></label>
+          <input class="m-input" id="sId" type="text" placeholder="영문·숫자 4~20자" oninput="vId(this)" />
+          <div class="field-hint" id="hId"></div>
+        </div>
+        <div class="m-field">
+          <label class="m-label">닉네임 <span class="req">*</span></label>
+          <input class="m-input" id="sNick" type="text" placeholder="앱에 표시될 이름 (2~12자)" oninput="vNick(this)" />
+          <div class="field-hint" id="hNick"></div>
+        </div>
+        <div class="m-field">
+          <label class="m-label">비밀번호 <span class="req">*</span></label>
+          <input class="m-input" id="sPw" type="password" placeholder="영문·숫자·특수문자 포함 8자 이상" oninput="vPw(this)" />
+          <div class="field-hint" id="hPw"></div>
+        </div>
+        <div class="m-field">
+          <label class="m-label">비밀번호 확인 <span class="req">*</span></label>
+          <input class="m-input" id="sPw2" type="password" placeholder="비밀번호 다시 입력" oninput="vPw2(this)" />
+          <div class="field-hint" id="hPw2"></div>
+        </div>
+        <div class="m-field">
+          <label class="m-label">이메일 주소 <span class="req">*</span></label>
+          <input class="m-input" id="sEmail" type="email" placeholder="example@email.com" oninput="vEmail(this)" />
+          <div class="field-hint" id="hEmail"></div>
+        </div>
+        <div class="m-field">
+          <label class="m-label">SNS 또는 홈페이지 <span class="req">*</span><span class="optional-note">둘 중 하나 필수</span></label>
+          <div class="sns-group">
+            <div class="sns-row">
+              <div class="sns-select" id="snsSelect">
+                <button type="button" class="sns-prefix sns-prefix-btn" onclick="toggleSnsDropdown(event)">
+                  <i class="ti ti-brand-instagram" id="snsIcon"></i><span id="snsName">Instagram</span><i class="ti ti-chevron-down sns-caret"></i>
+                </button>
+                <div class="sns-dropdown" id="snsDropdown">
+                  <div class="sns-option" onclick="selectSns('Instagram','ti-brand-instagram','instagram.com/계정명')"><i class="ti ti-brand-instagram"></i> Instagram</div>
+                  <div class="sns-option" onclick="selectSns('X (트위터)','ti-brand-x','x.com/계정명')"><i class="ti ti-brand-x"></i> X (트위터)</div>
+                  <div class="sns-option" onclick="selectSns('TikTok','ti-brand-tiktok','tiktok.com/@계정명')"><i class="ti ti-brand-tiktok"></i> TikTok</div>
+                  <div class="sns-option" onclick="selectSns('Facebook','ti-brand-facebook','facebook.com/계정명')"><i class="ti ti-brand-facebook"></i> Facebook</div>
+                  <div class="sns-option" onclick="selectSns('YouTube','ti-brand-youtube','youtube.com/@채널명')"><i class="ti ti-brand-youtube"></i> YouTube</div>
+                </div>
+              </div>
+              <input class="m-input" id="sSns" type="text" placeholder="instagram.com/계정명 또는 @계정명" oninput="vSns()" />
+            </div>
+            <div class="sns-divider"><span>또는</span></div>
+            <div class="sns-row">
+              <span class="sns-prefix"><i class="ti ti-world" style="font-size:14px;vertical-align:-2px;margin-right:3px;"></i>홈페이지</span>
+              <input class="m-input" id="sWeb" type="text" placeholder="https://yoursite.org" oninput="vSns()" />
+            </div>
+          </div>
+          <div class="field-hint" id="hSns"></div>
+        </div>
+        <!-- CAPTCHA -->
+        <div class="captcha-box">
+          <div class="captcha-lbl">자동 가입 방지 문자</div>
+          <div class="captcha-display">
+            <span class="captcha-chars" id="captchaText"></span>
+            <button class="captcha-refresh" onclick="newCaptcha()" title="새 문자 생성"><i class="ti ti-refresh"></i></button>
+          </div>
+          <input class="m-input" id="sCaptcha" type="text" placeholder="위 문자를 그대로 입력하세요" maxlength="6" oninput="vCaptcha(this)" />
+          <div class="field-hint" id="hCaptcha"></div>
+        </div>
+        <button class="m-submit green" onclick="doSignup()">가입하기</button>
+        <div class="m-switch">이미 계정이 있으신가요? <a onclick="showPanel('login')">로그인</a></div>
+      </div>
+      <!-- Signup success -->
+      <div id="signupOk" class="alt-screen">
+        <div class="success-icon">🌊</div>
+        <div class="success-title">가입이 완료되었습니다!</div>
+        <div class="success-desc">바로 로그인하여 활동 사진을 업로드하실 수 있습니다.</div>
+        <button class="m-submit" onclick="showPanel('login')">로그인하러 가기</button>
+      </div>
+    </div>
+
+    <!-- FIND ID -->
+    <div id="panelFindId" style="display:none;">
+      <div id="findIdForm">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">가입 시 등록하신 이메일 주소를 입력하시면 아이디를 알려드립니다.</p>
+        <div class="m-field">
+          <label class="m-label">이메일 주소 <span class="req">*</span></label>
+          <input class="m-input" id="fEmail" type="email" placeholder="가입할 때 입력한 이메일" />
+          <div class="field-hint" id="hFEmail"></div>
+        </div>
+        <button class="m-submit" onclick="doFindId()">아이디 확인</button>
+        <div class="m-switch"><a onclick="showPanel('login')">← 로그인으로 돌아가기</a></div>
+      </div>
+      <!-- Find ID result -->
+      <div id="findIdOk" class="alt-screen">
+        <div class="success-icon">🪪</div>
+        <div class="success-title">아이디를 찾았습니다</div>
+        <div class="pw-result-box">
+          <div class="pw-result-label">아이디</div>
+          <div class="pw-result-val" id="findIdResult"></div>
+        </div>
+        <button class="m-submit" onclick="showPanel('login')">로그인하러 가기</button>
+      </div>
+    </div>
+
+    <!-- PASSWORD RECOVERY -->
+    <div id="panelRecovery" style="display:none;">
+      <div id="recoveryForm">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6;">가입 시 등록하신 이메일 주소를 입력하시면 비밀번호를 알려드립니다.</p>
+        <div class="m-field">
+          <label class="m-label">이메일 주소 <span class="req">*</span></label>
+          <input class="m-input" id="rEmail" type="email" placeholder="가입할 때 입력한 이메일" />
+          <div class="field-hint" id="hREmail"></div>
+        </div>
+        <button class="m-submit" onclick="doRecovery()">비밀번호 확인</button>
+        <div class="m-switch"><a onclick="showPanel('login')">← 로그인으로 돌아가기</a></div>
+      </div>
+      <!-- Recovery result -->
+      <div id="recoveryOk" class="alt-screen">
+        <div class="success-icon">🔑</div>
+        <div class="success-title">비밀번호를 찾았습니다</div>
+        <div class="pw-result-box">
+          <div class="pw-result-label">아이디 · 비밀번호</div>
+          <div class="pw-result-val" id="recoveryResult"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);text-align:center;margin-bottom:14px;">로그인 후 비밀번호를 변경하는 것을 권장합니다.</div>
+        <button class="m-submit" onclick="showPanel('login')">로그인하러 가기</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ UPLOAD MODAL ═══ -->
+<div class="modal-bg" id="uploadModal">
+  <div class="upload-modal-box">
+    <div class="modal-top">
+      <div class="modal-title">활동 사진 업로드</div>
+      <button class="modal-close-btn" onclick="closeUpload()">×</button>
+    </div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="handleDrop(event)">
+      <i class="ti ti-photo-plus"></i>
+      <p>클릭하거나 사진을 끌어다 놓으세요</p>
+      <small>JPG, PNG, GIF 지원 · 최대 5MB</small>
+      <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)" />
+    </div>
+    <div class="preview-row" id="previewRow"></div>
+    <div class="m-field">
+      <label class="m-label">제목 <span class="req">*</span></label>
+      <input class="m-input" id="upTitle" type="text" placeholder="활동 제목을 입력하세요" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">활동 분류 <span class="req">*</span></label>
+      <select class="m-select" id="upType">
+        <option value="kelp">🌿 해조류 복원</option>
+        <option value="cleanup">🗑️ 쓰레기 수거</option>
+        <option value="coral">🪸 산호 복원</option>
+      </select>
+    </div>
+    <div class="m-field">
+      <label class="m-label">단체 / 기관명</label>
+      <input class="m-input" id="upOrg" type="text" placeholder="소속 단체나 기관명 (선택)" />
+    </div>
+    <button class="m-submit" onclick="doUpload()"><i class="ti ti-upload" style="margin-right:5px;"></i>업로드</button>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-top"><div class="modal-title">설정</div><button class="modal-close-btn" onclick="closeSettings()">×</button></div>
+    <div class="settings-list">
+      <button class="settings-item" onclick="closeSettings();document.getElementById('avatarInput').click()"><i class="ti ti-photo"></i> 프로필 사진 변경</button>
+      <button class="settings-item" id="settingsLogout" onclick="doLogout();closeSettings()"><i class="ti ti-logout"></i> 로그아웃</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:16px;">Dive+ · v1.0.0</div>
+  </div>
+</div>
+
+<!-- ═══ NOTIFICATION MODAL ═══ -->
+<div class="modal-bg" id="notifModal">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-top"><div class="modal-title">알림</div><button class="modal-close-btn" onclick="closeNotifications()">×</button></div>
+    <div class="notif-empty"><i class="ti ti-bell-off"></i><p>새로운 알림이 없습니다.</p></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════
+//  DATA STORE (localStorage)
+// ═══════════════════════════════
+const DB = {
+  getUsers(){ try{return JSON.parse(localStorage.getItem('of_users')||'[]')}catch{return[]} },
+  saveUsers(u){ localStorage.setItem('of_users', JSON.stringify(u)) },
+  getPosts(){ try{return JSON.parse(localStorage.getItem('of_posts')||'[]')}catch{return[]} },
+  savePosts(p){ localStorage.setItem('of_posts', JSON.stringify(p)) },
+  getSession(){ return localStorage.getItem('of_session')||'' },
+  setSession(id){ localStorage.setItem('of_session',id) },
+  clearSession(){ localStorage.removeItem('of_session') }
+};
+
+// seed demo posts
+(function seedPosts(){
+  if(DB.getPosts().length) return;
+  DB.savePosts([
+    {id:'p1', owner:'ocean_admin', title:'제주 감태 복원 2차 모종 이식 완료', org:'한국 해양환경공단', type:'kelp', date:'2025.11.03', img:null, emoji:'🌿'},
+    {id:'p2', owner:'ocean_admin', title:'수중 드론 모니터링 영상 공개', org:'Ocean Forest Norway', type:'kelp', date:'2025.10.22', img:null, emoji:'🎬'},
+    {id:'p3', owner:'ocean_admin', title:'인도양 플라스틱 12톤 수거', org:'Ocean Cleanup Africa', type:'cleanup', date:'2025.10.10', img:null, emoji:'🗑️'},
+    {id:'p4', owner:'ocean_admin', title:'3D 프린팅 인공 암초 600개 설치', org:'Coral Restoration Aus', type:'coral', date:'2025.09.30', img:null, emoji:'🪸'},
+    {id:'p5', owner:'ocean_admin', title:'포시도니아 해초 1,200주 이식', org:'WWF Mediterranean', type:'kelp', date:'2025.09.15', img:null, emoji:'🌱'},
+    {id:'p6', owner:'ocean_admin', title:'북해 쓰레기 수거 선박 운항', org:'North Sea Foundation', type:'cleanup', date:'2025.08.28', img:null, emoji:'🚢'},
+  ]);
+  // seed admin user
+  const users = DB.getUsers();
+  if(!users.find(u=>u.id==='ocean_admin')){
+    users.push({id:'ocean_admin',pw:'Admin123!',email:'admin@oceanforest.org',sns:'',web:'oceanforest.org'});
+    DB.saveUsers(users);
+  }
+})();
+
+// ═══════════════════════════════
+//  SESSION
+// ═══════════════════════════════
+let currentUser = DB.getSession();
+
+function refreshNavUI(){
+  const loggedIn = !!currentUser;
+  document.getElementById('navGuest').style.display = loggedIn ? 'none' : 'flex';
+  const nu = document.getElementById('navUser');
+  nu.style.display = loggedIn ? 'flex' : 'none';
+  if(loggedIn){
+    const u = DB.getUsers().find(x=>x.id===currentUser);
+    document.getElementById('navUsername').textContent = (u && u.nick) ? u.nick : currentUser;
+  }
+  renderPosts();
+  if(typeof refreshProfile === 'function') refreshProfile();
+}
+
+// ═══════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════
+function go(id, btn){
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
+  // 지도 탭으로 돌아오면 크기를 다시 계산해 깨짐 방지
+  if(id==='map' && oceanMap){ setTimeout(function(){ oceanMap.invalidateSize(); }, 80); }
+  if(id==='profile'){ refreshProfile(); }
+}
+
+// ═══════════════════════════════
+//  마이(프로필) 탭
+// ═══════════════════════════════
+function avatarKey(){ return 'of_avatar_' + (currentUser || 'guest'); }
+function applyAvatar(dataUrl){
+  const img=document.getElementById('avatarImg'), ph=document.getElementById('avatarPlaceholder');
+  if(!img) return;
+  if(dataUrl){ img.src=dataUrl; img.style.display='block'; if(ph) ph.style.display='none'; }
+  else { img.removeAttribute('src'); img.style.display='none'; if(ph) ph.style.display='block'; }
+}
+function setAvatar(input){
+  const file=input.files&&input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const im=new Image();
+    im.onload=function(){
+      const S=256, c=document.createElement('canvas'); c.width=S; c.height=S;
+      const ctx=c.getContext('2d');
+      const sc=Math.max(S/im.width, S/im.height), w=im.width*sc, h=im.height*sc;
+      ctx.drawImage(im,(S-w)/2,(S-h)/2,w,h);
+      const url=c.toDataURL('image/jpeg',0.85);
+      try{ localStorage.setItem(avatarKey(), url); }catch(err){}
+      applyAvatar(url);
+    };
+    im.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+function refreshProfile(){
+  const u = currentUser ? DB.getUsers().find(x=>x.id===currentUser) : null;
+  const nm=document.getElementById('profileNick'); if(nm) nm.textContent = u ? (u.nick||u.id) : '게스트';
+  const lo=document.getElementById('settingsLogout'); if(lo) lo.style.display = currentUser ? 'flex' : 'none';
+  applyAvatar(localStorage.getItem(avatarKey()));
+}
+function openSettings(){ document.getElementById('settingsModal').classList.add('show'); }
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+function openNotifications(){ document.getElementById('notifModal').classList.add('show'); }
+function closeNotifications(){ document.getElementById('notifModal').classList.remove('show'); }
+
+// ═══════════════════════════════
+//  한국 중심 세계 지도 (Leaflet)
+// ═══════════════════════════════
+const SITES = [
+  {name:'제주도 감태 군락',     org:'한국 해양환경공단 · 제주',          type:'kelp',    lat:33.4,  lng:126.5},
+  {name:'노르웨이 다시마 숲',    org:'Ocean Forest Norway',           type:'kelp',    lat:60.5,  lng:7.5},
+  {name:'캘리포니아 켈프 복원',  org:'The Nature Conservancy',        type:'kelp',    lat:36.6,  lng:-121.9},
+  {name:'인도양 쓰레기 수거',    org:'Ocean Cleanup Africa',          type:'cleanup', lat:-6.0,  lng:72.0},
+  {name:'그레이트 배리어 리프',  org:'Coral Restoration Aus',         type:'coral',   lat:-18.3, lng:147.7},
+  {name:'아마존 하구 해역',     org:'IBAMA 해양보전팀',                type:'kelp',    lat:0.0,   lng:-50.0},
+  {name:'지중해 포시도니아',     org:'WWF Mediterranean',             type:'kelp',    lat:39.5,  lng:14.0},
+  {name:'북해 해양 청소',       org:'North Sea Foundation',          type:'cleanup', lat:56.0,  lng:3.0},
+  {name:'동아프리카 맹그로브',   org:'African Wildlife Foundation',   type:'kelp',    lat:-6.8,  lng:39.3},
+];
+const TYPE_COLOR = {kelp:'#639922', cleanup:'#BA7517', coral:'#D85A30'};
+const TYPE_LABEL = {kelp:'해조류 복원', cleanup:'쓰레기 수거', coral:'산호 복원'};
+const BADGE = {kelp:['badge-kelp','해조류'], cleanup:['badge-cleanup','청소'], coral:['badge-coral','산호']};
+let oceanMap = null;
+const siteMarkers = {};
+
+function renderSiteList(){
+  const el = document.getElementById('siteList');
+  if(!el) return;
+  el.innerHTML = SITES.map(function(s,i){
+    return '<div class="site-item" onclick="focusSite('+i+')">'+
+      '<div class="site-name">'+s.name+'</div>'+
+      '<div class="site-meta">'+s.org+'</div>'+
+      '<span class="site-badge '+BADGE[s.type][0]+'">'+BADGE[s.type][1]+'</span></div>';
+  }).join('');
+}
+
+function initMap(){
+  if(typeof L === 'undefined' || oceanMap) return;
+  oceanMap = L.map('leafletMap', {
+    center: [36.5, 128],   // 한국을 화면 중심에
+    zoom: 2,
+    minZoom: 1,
+    maxZoom: 8,
+    worldCopyJump: true,
+    attributionControl: false
+  });
+  // 대륙(밝은 베이지)·바다(파랑)가 확연히 구분되는 지도
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(oceanMap);
+  SITES.forEach(function(s,i){
+    const m = L.circleMarker([s.lat, s.lng], {
+      radius: 7, color:'#ffffff', weight:2, opacity:0.9,
+      fillColor: TYPE_COLOR[s.type], fillOpacity: 0.95
+    }).addTo(oceanMap);
+    m.bindPopup('<strong>'+s.name+'</strong><br><span style="color:#888">'+s.org+'</span><br><span style="color:'+TYPE_COLOR[s.type]+'">● '+TYPE_LABEL[s.type]+'</span>');
+    siteMarkers[i] = m;
+  });
+  setTimeout(function(){ oceanMap.invalidateSize(); }, 300);
+}
+
+function focusSite(i){
+  const s = SITES[i];
+  if(oceanMap){
+    oceanMap.flyTo([s.lat, s.lng], 5, { duration: 0.8 });
+    if(siteMarkers[i]) siteMarkers[i].openPopup();
+  }
+}
+
+window.addEventListener('load', function(){ renderSiteList(); initMap(); refreshProfile(); });
+
+// ═══════════════════════════════
+//  MAP
+// ═══════════════════════════════
+function tip(e,site,org,type){
+  const labels={kelp:'해조류 복원',cleanup:'쓰레기 수거',coral:'산호 복원'};
+  document.getElementById('tSite').textContent=site;
+  document.getElementById('tOrg').textContent=org;
+  const tag=document.getElementById('tTag');
+  tag.textContent=labels[type]||type; tag.className='tip-tag '+type;
+  const t=document.getElementById('mTip'),r=document.getElementById('mapArea').getBoundingClientRect();
+  t.style.left=Math.min(e.clientX-r.left+14,r.width-190)+'px';
+  t.style.top=Math.max(4,e.clientY-r.top-80)+'px';
+  t.classList.add('show');
+}
+function htip(){ document.getElementById('mTip').classList.remove('show'); }
+
+// ═══════════════════════════════
+//  POSTS / ACTIVITIES
+// ═══════════════════════════════
+let currentFilter = 'all';
+function filt(el, type){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); currentFilter=type; renderPosts();
+}
+
+const bgClass = {kelp:'kelp-bg', cleanup:'cleanup-bg', coral:'coral-bg'};
+
+function renderPosts(){
+  const grid = document.getElementById('actGrid');
+  const posts = DB.getPosts().filter(p=> currentFilter==='all' || p.type===currentFilter).reverse();
+  grid.innerHTML = '';
+  if(!posts.length){
+    grid.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;grid-column:1/-1;">등록된 활동이 없습니다.</div>';
+    return;
+  }
+  posts.forEach(p=>{
+    const canDelete = currentUser && (currentUser===p.owner || currentUser==='ocean_admin');
+    const imgHtml = p.img
+      ? `<img src="${p.img}" alt="${p.title}" />`
+      : `<span class="emoji-placeholder">${p.emoji||'🌊'}</span>`;
+    const del = canDelete
+      ? `<button class="delete-btn visible" onclick="deletePost('${p.id}',event)" title="삭제"><i class="ti ti-trash" style="font-size:12px;"></i> 삭제</button>`
+      : '';
+    const badge = {kelp:'badge-kelp',cleanup:'badge-cleanup',coral:'badge-coral'}[p.type]||'badge-kelp';
+    const label = {kelp:'해조류',cleanup:'청소',coral:'산호'}[p.type]||'';
+    grid.insertAdjacentHTML('beforeend',`
+      <div class="act-card">
+        <div class="act-img ${bgClass[p.type]||'ocean-bg'}">
+          ${imgHtml}
+          ${del}
+        </div>
+        <div class="act-body">
+          <div class="act-org">${p.org||currentUser}</div>
+          <div class="act-name">${p.title}</div>
+          <div class="act-foot"><span class="act-date">${p.date}</span><span class="site-badge ${badge}">${label}</span></div>
+        </div>
+      </div>`);
+  });
+}
+
+function deletePost(id, e){
+  e.stopPropagation();
+  if(!currentUser){return;}
+  const posts = DB.getPosts();
+  const idx = posts.findIndex(p=>p.id===id);
+  if(idx===-1) return;
+  if(posts[idx].owner!==currentUser && currentUser!=='ocean_admin'){alert('본인이 올린 게시물만 삭제할 수 있습니다.');return;}
+  if(!confirm('이 게시물을 삭제하시겠습니까?')) return;
+  posts.splice(idx,1); DB.savePosts(posts); renderPosts();
+}
+
+// ═══════════════════════════════
+//  AUTH MODAL
+// ═══════════════════════════════
+function openAuth(panel){
+  document.getElementById('authModal').classList.add('show');
+  showPanel(panel||'login');
+  if(panel==='signup') newCaptcha();
+}
+function closeAuth(){ document.getElementById('authModal').classList.remove('show'); }
+document.getElementById('authModal').addEventListener('click',function(e){if(e.target===this)closeAuth();});
+
+function showPanel(name){
+  ['login','signup','recovery','findId'].forEach(n=>{
+    const el=document.getElementById('panel'+n.charAt(0).toUpperCase()+n.slice(1));
+    if(el) el.style.display = n===name?'block':'none';
+  });
+  const titles={login:'로그인',signup:'회원가입',recovery:'비밀번호 찾기',findId:'아이디 찾기'};
+  document.getElementById('authTitle').textContent = titles[name]||'';
+  const tabs = document.getElementById('authTabs');
+  tabs.style.display = (name==='recovery'||name==='findId')?'none':'flex';
+  document.querySelectorAll('.modal-tab').forEach((t,i)=>{
+    t.classList.toggle('active', (name==='login'&&i===0)||(name==='signup'&&i===1));
+  });
+  if(name==='login'){
+    const saved=localStorage.getItem('of_saved_id');
+    const lid=document.getElementById('lId'), rc=document.getElementById('rememberId');
+    if(saved){ lid.value=saved; rc.checked=true; } else { rc.checked=false; }
+  }
+  if(name==='signup'){ document.getElementById('signupForm').style.display='block'; document.getElementById('signupOk').classList.remove('show'); newCaptcha(); }
+  if(name==='recovery'){ document.getElementById('recoveryForm').style.display='block'; document.getElementById('recoveryOk').classList.remove('show'); document.getElementById('hREmail').style.display='none'; document.getElementById('rEmail').value=''; }
+  if(name==='findId'){ document.getElementById('findIdForm').style.display='block'; document.getElementById('findIdOk').classList.remove('show'); document.getElementById('hFEmail').style.display='none'; document.getElementById('fEmail').value=''; }
+  document.getElementById('loginErr').style.display='none';
+}
+
+// ── LOGIN ──
+function doLogin(){
+  const id=document.getElementById('lId').value.trim();
+  const pw=document.getElementById('lPw').value;
+  const errEl=document.getElementById('loginErr');
+  if(!id||!pw){ showErr(errEl,'아이디와 비밀번호를 입력해주세요.'); return; }
+  const user=DB.getUsers().find(u=>u.id===id&&u.pw===pw);
+  if(!user){ showErr(errEl,'아이디 또는 비밀번호가 올바르지 않습니다.'); return; }
+  if(document.getElementById('rememberId').checked){ localStorage.setItem('of_saved_id', id); }
+  else { localStorage.removeItem('of_saved_id'); }
+  currentUser=id; DB.setSession(id);
+  closeAuth(); refreshNavUI();
+}
+
+// ── FIND ID ──
+function doFindId(){
+  const email=document.getElementById('fEmail').value.trim();
+  const hEl=document.getElementById('hFEmail');
+  if(!email){ hEl.textContent='이메일을 입력해주세요.'; hEl.className='field-hint show e'; return; }
+  const user=DB.getUsers().find(u=>u.email===email);
+  if(!user){ hEl.textContent='해당 이메일로 가입된 계정이 없습니다.'; hEl.className='field-hint show e'; return; }
+  document.getElementById('findIdResult').textContent=user.id;
+  document.getElementById('findIdForm').style.display='none';
+  document.getElementById('findIdOk').classList.add('show');
+}
+function showErr(el,msg){ el.textContent=msg; el.style.display='block'; }
+
+// ── LOGOUT ──
+function doLogout(){ currentUser=''; DB.clearSession(); refreshNavUI(); }
+
+// ── SIGNUP ──
+let captchaCode='';
+function newCaptcha(){
+  const ch='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  captchaCode=Array.from({length:6},()=>ch[Math.floor(Math.random()*ch.length)]).join('');
+  document.getElementById('captchaText').textContent=captchaCode;
+  document.getElementById('sCaptcha').value='';
+  setH('hCaptcha','',''); document.getElementById('sCaptcha').className='m-input';
+}
+function setH(id,msg,type){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=msg; el.className='field-hint'+(msg?' show':'')+(type?' '+type:'');
+}
+function setIn(inp,type){ inp.className='m-input'+(type?' '+type:''); }
+
+function vId(inp){ const v=inp.value.trim(); if(!v){setIn(inp,'');setH('hId','','');return false;} if(!/^[a-zA-Z0-9]{4,20}$/.test(v)){setIn(inp,'err');setH('hId','영문·숫자 4~20자','e');return false;} if(DB.getUsers().find(u=>u.id===v)){setIn(inp,'err');setH('hId','이미 사용 중인 아이디입니다.','e');return false;} setIn(inp,'ok');setH('hId','사용 가능한 아이디입니다.','s');return true; }
+function vNick(inp){ const v=inp.value.trim(); if(!v){setIn(inp,'');setH('hNick','','');return false;} if(v.length<2||v.length>12){setIn(inp,'err');setH('hNick','닉네임은 2~12자로 입력해주세요.','e');return false;} setIn(inp,'ok');setH('hNick','','');return true; }
+function vPw(inp){ const v=inp.value; if(!v){setIn(inp,'');setH('hPw','','');return false;} if(v.length<8||!/[a-zA-Z]/.test(v)||!/[0-9]/.test(v)||!/[^a-zA-Z0-9]/.test(v)){setIn(inp,'err');setH('hPw','영문·숫자·특수문자 포함 8자 이상','e');return false;} setIn(inp,'ok');setH('hPw','안전한 비밀번호입니다.','s'); const p2=document.getElementById('sPw2'); if(p2.value)vPw2(p2); return true; }
+function vPw2(inp){ const v=inp.value,pw=document.getElementById('sPw').value; if(!v){setIn(inp,'');setH('hPw2','','');return false;} if(v!==pw){setIn(inp,'err');setH('hPw2','비밀번호가 일치하지 않습니다.','e');return false;} setIn(inp,'ok');setH('hPw2','비밀번호가 일치합니다.','s');return true; }
+function vEmail(inp){ const v=inp.value.trim(); if(!v){setIn(inp,'');setH('hEmail','','');return false;} if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){setIn(inp,'err');setH('hEmail','올바른 이메일 형식을 입력해주세요.','e');return false;} setIn(inp,'ok');setH('hEmail','','');return true; }
+function vSns(){ const s=document.getElementById('sSns').value.trim(),w=document.getElementById('sWeb').value.trim(); if(!s&&!w){setH('hSns','SNS 또는 홈페이지 중 하나는 필수입니다.','e');return false;} setH('hSns','','');return true; }
+function vCaptcha(inp){ const v=inp.value; if(!v){setIn(inp,'');setH('hCaptcha','','');return false;} if(v===captchaCode){setIn(inp,'ok');setH('hCaptcha','확인되었습니다.','s');return true;} setIn(inp,'err');setH('hCaptcha','입력한 문자가 일치하지 않습니다.','e');return false; }
+
+function doSignup(){
+  const ok=[
+    vId(document.getElementById('sId')),
+    vNick(document.getElementById('sNick')),
+    vPw(document.getElementById('sPw')),
+    vPw2(document.getElementById('sPw2')),
+    vEmail(document.getElementById('sEmail')),
+    vSns(),
+    vCaptcha(document.getElementById('sCaptcha'))
+  ];
+  if(ok.some(v=>!v)) return;
+  const users=DB.getUsers();
+  users.push({
+    id:document.getElementById('sId').value.trim(),
+    nick:document.getElementById('sNick').value.trim(),
+    pw:document.getElementById('sPw').value,
+    email:document.getElementById('sEmail').value.trim(),
+    sns:document.getElementById('sSns').value.trim(),
+    web:document.getElementById('sWeb').value.trim()
+  });
+  DB.saveUsers(users);
+  document.getElementById('signupForm').style.display='none';
+  document.getElementById('signupOk').classList.add('show');
+}
+
+// ── RECOVERY ──
+function doRecovery(){
+  const email=document.getElementById('rEmail').value.trim();
+  const hEl=document.getElementById('hREmail');
+  if(!email){ hEl.textContent='이메일을 입력해주세요.'; hEl.className='field-hint show e'; return; }
+  const user=DB.getUsers().find(u=>u.email===email);
+  if(!user){ hEl.textContent='해당 이메일로 가입된 계정이 없습니다.'; hEl.className='field-hint show e'; return; }
+  document.getElementById('recoveryResult').textContent=user.id+' / '+user.pw;
+  document.getElementById('recoveryForm').style.display='none';
+  document.getElementById('recoveryOk').classList.add('show');
+}
+
+// ═══════════════════════════════
+//  UPLOAD MODAL
+// ═══════════════════════════════
+let pendingFiles=[];
+
+function handleUploadClick(){
+  if(!currentUser){ openAuth('login'); return; }
+  document.getElementById('uploadModal').classList.add('show');
+  pendingFiles=[]; renderPreviews();
+}
+function closeUpload(){ document.getElementById('uploadModal').classList.remove('show'); pendingFiles=[]; renderPreviews(); }
+document.getElementById('uploadModal').addEventListener('click',function(e){if(e.target===this)closeUpload();});
+
+function handleFiles(files){
+  Array.from(files).forEach(f=>{
+    if(!f.type.startsWith('image/')||f.size>5*1024*1024) return;
+    const r=new FileReader();
+    r.onload=e=>{ pendingFiles.push(e.target.result); renderPreviews(); };
+    r.readAsDataURL(f);
+  });
+}
+function handleDrop(e){
+  e.preventDefault(); document.getElementById('dropZone').classList.remove('drag');
+  handleFiles(e.dataTransfer.files);
+}
+function renderPreviews(){
+  const row=document.getElementById('previewRow');
+  row.innerHTML=pendingFiles.map((src,i)=>`
+    <div class="preview-item">
+      <img src="${src}" alt="preview" />
+      <button onclick="removePreview(${i})">×</button>
+    </div>`).join('');
+}
+function removePreview(i){ pendingFiles.splice(i,1); renderPreviews(); }
+
+function doUpload(){
+  const title=document.getElementById('upTitle').value.trim();
+  if(!title){alert('제목을 입력해주세요.');return;}
+  if(!currentUser){alert('로그인이 필요합니다.');return;}
+  const type=document.getElementById('upType').value;
+  const org=document.getElementById('upOrg').value.trim();
+  const now=new Date();
+  const date=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  const emojis={kelp:'🌿',cleanup:'🗑️',coral:'🪸'};
+  const posts=DB.getPosts();
+  const img=pendingFiles.length?pendingFiles[0]:null;
+  posts.push({id:'p'+Date.now(),owner:currentUser,title,org:org||currentUser,type,date,img,emoji:emojis[type]||'🌊'});
+  DB.savePosts(posts);
+  closeUpload();
+  document.getElementById('upTitle').value='';
+  document.getElementById('upOrg').value='';
+  renderPosts();
+  // switch to activities tab
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn')[2].classList.add('active');
+  document.getElementById('page-activities').classList.add('active');
+}
+
+
+// ═══════════════════════════════
+//  LANGUAGE SPLASH
+// ═══════════════════════════════
+let selectedLang = localStorage.getItem('of_lang') || '';
+
+function selectLang(code, label) {
+  // 1. update nav button label
+  localStorage.setItem('of_lang', code);
+  selectedLang = code;
+  // flash selected item
+  const splash = document.getElementById('langSplash');
+  splash.style.transition = 'opacity 0.55s ease, visibility 0.55s ease';
+  splash.classList.add('hidden');
+  // 언어 선택 후 로그인/회원가입 안내 (이미 로그인된 경우 생략)
+  if(!currentUser){
+    setTimeout(() => { openAuth('login'); }, 600);
+  }
+}
+
+// 언어 선택 드롭다운 열기/닫기
+function toggleLangDropdown(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('langSelect').classList.toggle('open');
+}
+// SNS 선택 드롭다운 열기/닫기
+function toggleSnsDropdown(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('snsSelect').classList.toggle('open');
+}
+// SNS 선택 → 아이콘·이름·입력 안내문 변경
+function selectSns(name, iconClass, placeholder) {
+  const icon = document.getElementById('snsIcon');
+  if (icon) icon.className = 'ti ' + iconClass;
+  const nm = document.getElementById('snsName');
+  if (nm) nm.textContent = name;
+  const inp = document.getElementById('sSns');
+  if (inp) inp.placeholder = placeholder + ' 또는 @계정명';
+  document.getElementById('snsSelect').classList.remove('open');
+}
+// 바깥을 누르면 드롭다운 닫기
+document.addEventListener('click', function(e) {
+  const sel = document.getElementById('langSelect');
+  if (sel && !sel.contains(e.target)) sel.classList.remove('open');
+  const sns = document.getElementById('snsSelect');
+  if (sns && !sns.contains(e.target)) sns.classList.remove('open');
+});
+
+// Skip splash if language already chosen this session
+(function initSplash() {
+  const splash = document.getElementById('langSplash');
+  if (sessionStorage.getItem('of_lang_chosen')) {
+    splash.style.display = 'none';
+    return;
+  }
+  // Auto-dismiss after 12s if user does nothing
+  setTimeout(() => {
+    if (!splash.classList.contains('hidden')) {
+      selectLang(selectedLang || 'ko', '한국어');
+    }
+  }, 12000);
+})();
+
+// After language is picked, mark session so splash won't re-appear on reload
+document.getElementById('langSplash').addEventListener('transitionend', function() {
+  sessionStorage.setItem('of_lang_chosen', '1');
+});
+
+// ═══════════════════════════════
+//  LANG PILLS
+// ═══════════════════════════════
+document.querySelectorAll('.lang-pill').forEach(p=>{
+  p.addEventListener('click',function(){
+    this.closest('.lang-pills').querySelectorAll('.lang-pill').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ═══════════════════════════════
+//  INIT
+// ═══════════════════════════════
+refreshNavUI();
+
+// ═══════════════════════════════
+//  PWA SERVICE WORKER (http/https에서만 등록 — file:// WebView에선 자동 무시)
+// ═══════════════════════════════
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW 등록 실패:', err));
+  });
+}
+</script>
+</body>
+</html>

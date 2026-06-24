@@ -1,0 +1,23 @@
+{
+  "name": "바다숲 복원",
+  "short_name": "바다숲",
+  "description": "Global Ocean Restoration Platform — 바다 숲 복원 활동을 기록하고 공유하는 플랫폼",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060a0f",
+  "theme_color": "#1848C0",
+  "categories": ["lifestyle", "education", "social"],
+  "icons": [
+    { "src": "icon-120.png", "sizes": "120x120", "type": "image/png", "purpose": "any" },
+    { "src": "icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any" },
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}
