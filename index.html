@@ -1047,17 +1047,17 @@ function toggleFollow(target){
 (function seedPosts(){
   if(DB.getPosts().length) return;
   DB.savePosts([
-    {id:'p1', owner:'ocean_admin', title:'제주 감태 복원 2차 모종 이식 완료', org:'한국 해양환경공단', type:'kelp', date:'2025.11.03', img:null, emoji:'🌿'},
-    {id:'p2', owner:'ocean_admin', title:'수중 드론 모니터링 영상 공개', org:'Ocean Forest Norway', type:'kelp', date:'2025.10.22', img:null, emoji:'🎬'},
-    {id:'p3', owner:'ocean_admin', title:'인도양 플라스틱 12톤 수거', org:'Ocean Cleanup Africa', type:'cleanup', date:'2025.10.10', img:null, emoji:'♻️'},
-    {id:'p4', owner:'ocean_admin', title:'3D 프린팅 인공 암초 600개 설치', org:'Coral Restoration Aus', type:'coral', date:'2025.09.30', img:null, emoji:'🪸'},
-    {id:'p5', owner:'ocean_admin', title:'포시도니아 해초 1,200주 이식', org:'WWF Mediterranean', type:'kelp', date:'2025.09.15', img:null, emoji:'🌱'},
-    {id:'p6', owner:'ocean_admin', title:'북해 쓰레기 수거 선박 운항', org:'North Sea Foundation', type:'cleanup', date:'2025.08.28', img:null, emoji:'🚢'},
+    {id:'p1', owner:'tobia882', title:'제주 감태 복원 2차 모종 이식 완료', org:'한국 해양환경공단', type:'kelp', date:'2025.11.03', img:null, emoji:'🌿'},
+    {id:'p2', owner:'tobia882', title:'수중 드론 모니터링 영상 공개', org:'Ocean Forest Norway', type:'kelp', date:'2025.10.22', img:null, emoji:'🎬'},
+    {id:'p3', owner:'tobia882', title:'인도양 플라스틱 12톤 수거', org:'Ocean Cleanup Africa', type:'cleanup', date:'2025.10.10', img:null, emoji:'♻️'},
+    {id:'p4', owner:'tobia882', title:'3D 프린팅 인공 암초 600개 설치', org:'Coral Restoration Aus', type:'coral', date:'2025.09.30', img:null, emoji:'🪸'},
+    {id:'p5', owner:'tobia882', title:'포시도니아 해초 1,200주 이식', org:'WWF Mediterranean', type:'kelp', date:'2025.09.15', img:null, emoji:'🌱'},
+    {id:'p6', owner:'tobia882', title:'북해 쓰레기 수거 선박 운항', org:'North Sea Foundation', type:'cleanup', date:'2025.08.28', img:null, emoji:'🚢'},
   ]);
-  // seed admin user
+  // seed admin user (관리자: tobia882)
   const users = DB.getUsers();
-  if(!users.find(u=>u.id==='ocean_admin')){
-    users.push({id:'ocean_admin',pw:'Admin123!',email:'admin@oceanforest.org',sns:'',web:'oceanforest.org'});
+  if(!users.find(u=>u.id==='tobia882')){
+    users.push({id:'tobia882',pw:'derrick882!of',nick:'관리자',email:'tobia882@gmail.com',sns:'',web:'oceanforest.org'});
     DB.saveUsers(users);
   }
 })();
@@ -1077,7 +1077,7 @@ function toggleFollow(target){
 //  논문·기사 (research) — 관리자만 글쓰기
 // ═══════════════════════════════
 const ART_TYPE = { paper:['논문','type-paper'], news:['기사','type-news'], report:['보고서','type-report'] };
-function isAdmin(){ return currentUser === 'ocean_admin'; }
+function isAdmin(){ return currentUser === 'tobia882'; }
 function escArt(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function updateAdminUI(){ const b=document.getElementById('articleAddBtn'); if(b) b.style.display = isAdmin() ? 'inline-flex' : 'none'; }
 function renderArticles(){
@@ -1390,7 +1390,7 @@ function renderPosts(){
     return;
   }
   posts.forEach(p=>{
-    const canDelete = currentUser && (currentUser===p.owner || currentUser==='ocean_admin');
+    const canDelete = currentUser && (currentUser===p.owner || currentUser==='tobia882');
     const imgHtml = p.img
       ? `<img src="${p.img}" alt="${p.title}" />`
       : `<span class="emoji-placeholder">${p.emoji||'🌊'}</span>`;
@@ -1430,7 +1430,7 @@ function deletePost(id, e){
   const posts = DB.getPosts();
   const idx = posts.findIndex(p=>p.id===id);
   if(idx===-1) return;
-  if(posts[idx].owner!==currentUser && currentUser!=='ocean_admin'){alert('본인이 올린 게시물만 삭제할 수 있습니다.');return;}
+  if(posts[idx].owner!==currentUser && currentUser!=='tobia882'){alert('본인이 올린 게시물만 삭제할 수 있습니다.');return;}
   if(!confirm('이 게시물을 삭제하시겠습니까?')) return;
   posts.splice(idx,1); DB.savePosts(posts); renderPosts();
 }
