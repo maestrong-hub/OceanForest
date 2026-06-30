@@ -1,5 +1,5 @@
 /* 바다숲 복원 PWA Service Worker */
-const CACHE = 'oceanforest-v13';
+const CACHE = 'oceanforest-v14';
 
 // 앱 셸(로컬 파일) — 설치 시 미리 캐시
 const CORE = [

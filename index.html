@@ -686,8 +686,8 @@ body {
 
   <!-- BOTTOM NAV -->
   <nav class="bottomnav">
-    <button class="bnav-btn active" onclick="go('map',this)" aria-label="바다 숲 지도"><i class="ti ti-map-pin"></i></button>
     <button class="bnav-btn" onclick="go('activities',this)" aria-label="활동 현황"><i class="ti ti-camera"></i></button>
+    <button class="bnav-btn active" onclick="go('map',this)" aria-label="바다 숲 지도"><i class="ti ti-map-pin"></i></button>
     <button class="bnav-btn" onclick="go('ba',this)" aria-label="Before After"><i class="ti ti-arrows-left-right"></i></button>
     <button class="bnav-btn" onclick="go('research',this)" aria-label="논문 기사"><i class="ti ti-book-2"></i></button>
     <button class="bnav-btn" onclick="go('profile',this)" aria-label="마이"><i class="ti ti-scuba-mask"></i></button>
@@ -1054,7 +1054,10 @@ function toggleFollow(target){
     {id:'p5', owner:'tobia882', title:'포시도니아 해초 1,200주 이식', org:'WWF Mediterranean', type:'kelp', date:'2025.09.15', img:null, emoji:'🌱'},
     {id:'p6', owner:'tobia882', title:'북해 쓰레기 수거 선박 운항', org:'North Sea Foundation', type:'cleanup', date:'2025.08.28', img:null, emoji:'🚢'},
   ]);
-  // seed admin user (관리자: tobia882)
+})();
+
+// seed admin user (관리자: tobia882) — 게시물 유무와 무관하게 항상 보장
+(function seedAdmin(){
   const users = DB.getUsers();
   if(!users.find(u=>u.id==='tobia882')){
     users.push({id:'tobia882',pw:'derrick882!of',nick:'관리자',email:'tobia882@gmail.com',sns:'',web:'oceanforest.org'});
