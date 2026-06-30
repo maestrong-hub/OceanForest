@@ -194,6 +194,10 @@ body { font-family:'Apple SD Gothic Neo','Pretendard',system-ui,sans-serif; back
 .lang-pill{font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--border2);cursor:pointer;color:var(--text2);transition:all 0.12s;font-family:inherit;background:transparent;}
 .lang-pill:hover{background:rgba(55,138,221,0.15);color:var(--accent);border-color:var(--accent);}
 .lang-pill.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.article-add-btn{display:none;align-items:center;justify-content:center;gap:6px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px;font-family:inherit;}
+.article-add-btn i{font-size:17px;}
+.art-del{margin-left:auto;background:transparent;border:none;color:#c2553a;cursor:pointer;font-size:15px;padding:2px 5px;line-height:1;}
+.art-del:hover{color:#e0644a;}
 
 /* TECH */
 .tech-page{padding:18px;}
@@ -637,11 +641,9 @@ body {
   <!-- RESEARCH -->
   <div id="page-research" class="page">
     <div class="research-page">
-      <div class="search-box"><i class="ti ti-search"></i><input type="text" placeholder="논문, 기사, 키워드 검색..." /></div>
-      <div class="article"><div class="art-top"><span class="art-type type-paper">논문</span><span class="art-source">Nature Climate Change · 2024</span></div><div class="art-title">블루카본 생태계의 탄소 격리 잠재력: 전 지구적 평가</div><div class="art-desc">해초류와 염습지가 연간 수억 톤의 탄소를 해저 퇴적물에 저장하며, 이는 기존 추정치의 2배에 달한다는 연구 결과.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">日本語</button><button class="lang-pill">中文</button><button class="lang-pill">Español</button></div></div>
-      <div class="article"><div class="art-top"><span class="art-type type-news">기사</span><span class="art-source">BBC Science · 2025.09</span></div><div class="art-title">노르웨이, 세계 최대 규모 해조류 복원 프로젝트 착수</div><div class="art-desc">노르웨이 정부와 민간이 협력해 피오르드 200km²에 다시마 숲을 조성하는 역사적 프로젝트가 시작됐다.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">Deutsch</button><button class="lang-pill">Français</button></div></div>
-      <div class="article"><div class="art-top"><span class="art-type type-report">보고서</span><span class="art-source">UNEP · 2025</span></div><div class="art-title">기후 위기 대응 전략으로서의 해양 생태계 복원</div><div class="art-desc">2030년까지 해양 생태계 30%를 복원하면 기후 목표 달성에 결정적 역할을 할 수 있다는 UNEP의 최신 보고서.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">Português</button><button class="lang-pill">العربية</button></div></div>
-      <div class="article"><div class="art-top"><span class="art-type type-paper">논문</span><span class="art-source">Science · 2023</span></div><div class="art-title">해양 온도 상승이 켈프 숲 분포에 미치는 영향</div><div class="art-desc">해수 온도가 2°C 오를 때마다 켈프 서식 가능 구역이 극지 방향으로 70km씩 이동한다는 전 지구적 분석 연구.</div><div class="lang-pills"><button class="lang-pill active">한국어</button><button class="lang-pill">English</button><button class="lang-pill">中文</button><button class="lang-pill">Italiano</button></div></div>
+      <div class="search-box"><i class="ti ti-search"></i><input type="text" id="articleSearch" placeholder="논문, 기사, 키워드 검색..." oninput="renderArticles()" /></div>
+      <button id="articleAddBtn" class="article-add-btn" onclick="openArticleModal()"><i class="ti ti-plus"></i> 글 올리기</button>
+      <div id="articleList"></div>
     </div>
   </div>
 
@@ -914,6 +916,41 @@ body {
   </div>
 </div>
 
+<!-- ═══ ARTICLE MODAL (관리자 전용) ═══ -->
+<div class="modal-bg" id="articleModal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-title">논문 · 기사 등록</div>
+      <button class="modal-close-btn" onclick="closeArticleModal()">×</button>
+    </div>
+    <div class="m-field">
+      <label class="m-label">분류 <span class="req">*</span></label>
+      <select class="m-select" id="artType">
+        <option value="paper">📄 논문</option>
+        <option value="news">📰 기사</option>
+        <option value="report">📊 보고서</option>
+      </select>
+    </div>
+    <div class="m-field">
+      <label class="m-label">제목 <span class="req">*</span></label>
+      <input class="m-input" id="artTitle" type="text" placeholder="논문·기사 제목을 입력하세요" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">출처 · 연도</label>
+      <input class="m-input" id="artSource" type="text" placeholder="예: Nature Climate Change · 2024" />
+    </div>
+    <div class="m-field">
+      <label class="m-label">요약 / 설명</label>
+      <textarea class="m-input" id="artDesc" rows="4" placeholder="내용을 간단히 요약해주세요" style="resize:vertical;font-family:inherit;"></textarea>
+    </div>
+    <div class="m-field">
+      <label class="m-label">원문 링크 (선택)</label>
+      <input class="m-input" id="artLink" type="url" placeholder="https://..." />
+    </div>
+    <button class="m-submit" onclick="doAddArticle()"><i class="ti ti-plus" style="margin-right:5px;"></i>등록</button>
+  </div>
+</div>
+
 <!-- ═══ SETTINGS MODAL ═══ -->
 <div class="modal-bg" id="settingsModal">
   <div class="modal-box" style="max-width:360px;">
@@ -985,7 +1022,9 @@ const DB = {
   setSession(id, persist){ if(persist){ localStorage.setItem('of_session',id); sessionStorage.removeItem('of_session'); } else { sessionStorage.setItem('of_session',id); localStorage.removeItem('of_session'); } },
   clearSession(){ localStorage.removeItem('of_session'); sessionStorage.removeItem('of_session') },
   getFollows(){ try{return JSON.parse(localStorage.getItem('of_follows')||'{}')}catch{return{}} },
-  saveFollows(f){ localStorage.setItem('of_follows', JSON.stringify(f)) }
+  saveFollows(f){ localStorage.setItem('of_follows', JSON.stringify(f)) },
+  getArticles(){ try{return JSON.parse(localStorage.getItem('of_articles')||'[]')}catch{return[]} },
+  saveArticles(a){ localStorage.setItem('of_articles', JSON.stringify(a)) }
 };
 
 // ── 팔로우 헬퍼 ──
@@ -1023,6 +1062,81 @@ function toggleFollow(target){
   }
 })();
 
+// seed 논문·기사 (관리자만 추가 가능)
+(function seedArticles(){
+  if(localStorage.getItem('of_articles')) return;
+  DB.saveArticles([
+    {id:'a1', type:'paper',  source:'Nature Climate Change · 2024', title:'블루카본 생태계의 탄소 격리 잠재력: 전 지구적 평가', desc:'해초류와 염습지가 연간 수억 톤의 탄소를 해저 퇴적물에 저장하며, 이는 기존 추정치의 2배에 달한다는 연구 결과.', link:'', langs:['한국어','English','日本語','中文','Español']},
+    {id:'a2', type:'news',   source:'BBC Science · 2025.09',       title:'노르웨이, 세계 최대 규모 해조류 복원 프로젝트 착수', desc:'노르웨이 정부와 민간이 협력해 피오르드 200km²에 다시마 숲을 조성하는 역사적 프로젝트가 시작됐다.', link:'', langs:['한국어','English','Deutsch','Français']},
+    {id:'a3', type:'report', source:'UNEP · 2025',                 title:'기후 위기 대응 전략으로서의 해양 생태계 복원', desc:'2030년까지 해양 생태계 30%를 복원하면 기후 목표 달성에 결정적 역할을 할 수 있다는 UNEP의 최신 보고서.', link:'', langs:['한국어','English','Português','العربية']},
+    {id:'a4', type:'paper',  source:'Science · 2023',               title:'해양 온도 상승이 켈프 숲 분포에 미치는 영향', desc:'해수 온도가 2°C 오를 때마다 켈프 서식 가능 구역이 극지 방향으로 70km씩 이동한다는 전 지구적 분석 연구.', link:'', langs:['한국어','English','中文','Italiano']},
+  ]);
+})();
+
+// ═══════════════════════════════
+//  논문·기사 (research) — 관리자만 글쓰기
+// ═══════════════════════════════
+const ART_TYPE = { paper:['논문','type-paper'], news:['기사','type-news'], report:['보고서','type-report'] };
+function isAdmin(){ return currentUser === 'ocean_admin'; }
+function escArt(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function updateAdminUI(){ const b=document.getElementById('articleAddBtn'); if(b) b.style.display = isAdmin() ? 'inline-flex' : 'none'; }
+function renderArticles(){
+  const list=document.getElementById('articleList'); if(!list) return;
+  const sb=document.getElementById('articleSearch');
+  const q=(sb?sb.value:'').trim().toLowerCase();
+  let arts=DB.getArticles().slice().reverse();
+  if(q){ arts=arts.filter(a=>((a.title||'')+' '+(a.desc||'')+' '+(a.source||'')).toLowerCase().indexOf(q)>=0); }
+  const admin=isAdmin();
+  if(!arts.length){ list.innerHTML='<div style="text-align:center;color:var(--text3);padding:40px 0;font-size:14px;">'+(q?'검색 결과가 없습니다.':'등록된 글이 없습니다.')+'</div>'; return; }
+  list.innerHTML=arts.map(function(a){
+    const t=ART_TYPE[a.type]||ART_TYPE.paper;
+    const langs=(a.langs&&a.langs.length)?a.langs:['한국어'];
+    const pills=langs.map((l,i)=>'<button class="lang-pill'+(i===0?' active':'')+'">'+escArt(l)+'</button>').join('');
+    const del=admin?'<button class="art-del" onclick="deleteArticle(event,\''+a.id+'\')" aria-label="삭제"><i class="ti ti-trash"></i></button>':'';
+    const clk=a.link?(' onclick="openArticleLink(\''+a.id+'\')"'):'';
+    return '<div class="article"'+clk+'><div class="art-top"><span class="art-type '+t[1]+'">'+t[0]+'</span><span class="art-source">'+escArt(a.source)+'</span>'+del+'</div>'+
+      '<div class="art-title">'+escArt(a.title)+'</div>'+
+      (a.desc?'<div class="art-desc">'+escArt(a.desc)+'</div>':'')+
+      '<div class="lang-pills">'+pills+'</div></div>';
+  }).join('');
+}
+function openArticleLink(id){ const a=DB.getArticles().find(x=>x.id===id); if(a&&a.link){ window.open(a.link,'_blank','noopener'); } }
+function openArticleModal(){
+  if(!isAdmin()){ alert('관리자만 글을 올릴 수 있습니다.'); return; }
+  document.getElementById('articleModal').classList.add('show');
+}
+function closeArticleModal(){ document.getElementById('articleModal').classList.remove('show'); }
+document.getElementById('articleModal').addEventListener('click',function(e){if(e.target===this)closeArticleModal();});
+function doAddArticle(){
+  if(!isAdmin()){ alert('관리자만 글을 올릴 수 있습니다.'); return; }
+  const title=document.getElementById('artTitle').value.trim();
+  if(!title){ alert('제목을 입력해주세요.'); return; }
+  const arts=DB.getArticles();
+  arts.push({
+    id:'a'+Date.now(),
+    type:document.getElementById('artType').value,
+    source:document.getElementById('artSource').value.trim(),
+    title:title,
+    desc:document.getElementById('artDesc').value.trim(),
+    link:document.getElementById('artLink').value.trim(),
+    langs:['한국어']
+  });
+  DB.saveArticles(arts);
+  document.getElementById('artTitle').value='';
+  document.getElementById('artSource').value='';
+  document.getElementById('artDesc').value='';
+  document.getElementById('artLink').value='';
+  closeArticleModal();
+  renderArticles();
+}
+function deleteArticle(e,id){
+  if(e) e.stopPropagation();
+  if(!isAdmin()) return;
+  if(!confirm('이 글을 삭제하시겠습니까?')) return;
+  DB.saveArticles(DB.getArticles().filter(a=>a.id!==id));
+  renderArticles();
+}
+
 // ═══════════════════════════════
 //  SESSION
 // ═══════════════════════════════
@@ -1039,6 +1153,8 @@ function refreshNavUI(){
     if(nuName) nuName.textContent = (u && u.nick) ? u.nick : currentUser;
   }
   renderPosts();
+  if(typeof renderArticles === 'function') renderArticles();
+  if(typeof updateAdminUI === 'function') updateAdminUI();
   if(typeof refreshProfile === 'function') refreshProfile();
 }
 
@@ -1052,6 +1168,7 @@ function go(id, btn){
   document.getElementById('page-'+id).classList.add('active');
   // 지도 탭으로 돌아오면 크기를 다시 계산해 깨짐 방지
   if(id==='map' && oceanMap){ setTimeout(function(){ oceanMap.invalidateSize(); }, 80); }
+  if(id==='research'){ updateAdminUI(); renderArticles(); }
   if(id==='profile'){ refreshProfile(); }
 }
 
@@ -1235,7 +1352,7 @@ function focusSite(i){
   }
 }
 
-window.addEventListener('load', function(){ renderSiteList(); initMap(); refreshProfile(); });
+window.addEventListener('load', function(){ renderSiteList(); initMap(); refreshProfile(); updateAdminUI(); renderArticles(); });
 
 // ═══════════════════════════════
 //  MAP
